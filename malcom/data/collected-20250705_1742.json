@@ -1,0 +1,1393 @@
+[
+{
+  "model": "houses.livehousewebsite",
+  "pk": 1,
+  "fields": {
+    "created_datetime": "2025-07-05T07:08:44.103Z",
+    "updated_datetime": "2025-07-05T08:27:58.742Z",
+    "url": "https://www.loft-prj.co.jp/schedule/shelter",
+    "state": "completed",
+    "crawler_class": "LoftProjectShelterCrawler"
+  }
+},
+{
+  "model": "houses.livehousewebsite",
+  "pk": 2,
+  "fields": {
+    "created_datetime": "2025-07-05T07:08:44.105Z",
+    "updated_datetime": "2025-07-05T08:28:07.708Z",
+    "url": "https://www.lamama.net/",
+    "state": "completed",
+    "crawler_class": "LaMamaCrawler"
+  }
+},
+{
+  "model": "houses.livehousewebsite",
+  "pk": 3,
+  "fields": {
+    "created_datetime": "2025-07-05T08:03:56.895Z",
+    "updated_datetime": "2025-07-05T08:28:10.607Z",
+    "url": "https://clubque.net/",
+    "state": "completed",
+    "crawler_class": "LiveHouseWebsiteCrawler"
+  }
+},
+{
+  "model": "houses.livehousewebsite",
+  "pk": 4,
+  "fields": {
+    "created_datetime": "2025-07-05T08:04:00.831Z",
+    "updated_datetime": "2025-07-05T08:28:10.788Z",
+    "url": "http://www.cyclone1997.com/home.html",
+    "state": "completed",
+    "crawler_class": "LiveHouseWebsiteCrawler"
+  }
+},
+{
+  "model": "houses.livehousewebsite",
+  "pk": 5,
+  "fields": {
+    "created_datetime": "2025-07-05T08:04:06.006Z",
+    "updated_datetime": "2025-07-05T08:34:42.439Z",
+    "url": "https://en.club-quattro.com/shibuya/",
+    "state": "completed",
+    "crawler_class": "LiveHouseWebsiteCrawler"
+  }
+},
+{
+  "model": "houses.livehousewebsite",
+  "pk": 6,
+  "fields": {
+    "created_datetime": "2025-07-05T08:04:10.751Z",
+    "updated_datetime": "2025-07-05T08:42:41.792Z",
+    "url": "http://7th-floor.net/",
+    "state": "completed",
+    "crawler_class": "LiveHouseWebsiteCrawler"
+  }
+},
+{
+  "model": "houses.livehousewebsite",
+  "pk": 7,
+  "fields": {
+    "created_datetime": "2025-07-05T08:04:14.827Z",
+    "updated_datetime": "2025-07-05T08:42:42.433Z",
+    "url": "https://club-malcolm.com/",
+    "state": "completed",
+    "crawler_class": "LiveHouseWebsiteCrawler"
+  }
+},
+{
+  "model": "houses.livehousewebsite",
+  "pk": 8,
+  "fields": {
+    "created_datetime": "2025-07-05T08:04:19.840Z",
+    "updated_datetime": "2025-07-05T08:42:48.562Z",
+    "url": "https://www.unit-tokyo.com/",
+    "state": "failed",
+    "crawler_class": "LiveHouseWebsiteCrawler"
+  }
+},
+{
+  "model": "houses.livehousewebsite",
+  "pk": 9,
+  "fields": {
+    "created_datetime": "2025-07-05T08:04:23.637Z",
+    "updated_datetime": "2025-07-05T08:35:07.084Z",
+    "url": "https://heavens-door-music.com/",
+    "state": "completed",
+    "crawler_class": "LiveHouseWebsiteCrawler"
+  }
+},
+{
+  "model": "houses.livehousewebsite",
+  "pk": 10,
+  "fields": {
+    "created_datetime": "2025-07-05T08:04:28.684Z",
+    "updated_datetime": "2025-07-05T08:35:07.900Z",
+    "url": "http://warp.rinky.info/",
+    "state": "completed",
+    "crawler_class": "LiveHouseWebsiteCrawler"
+  }
+},
+{
+  "model": "houses.livehousewebsite",
+  "pk": 11,
+  "fields": {
+    "created_datetime": "2025-07-05T08:04:32.999Z",
+    "updated_datetime": "2025-07-05T08:35:08.680Z",
+    "url": "https://shinjuku-face.com/",
+    "state": "completed",
+    "crawler_class": "LiveHouseWebsiteCrawler"
+  }
+},
+{
+  "model": "houses.livehousewebsite",
+  "pk": 12,
+  "fields": {
+    "created_datetime": "2025-07-05T08:04:38.686Z",
+    "updated_datetime": "2025-07-05T08:35:09.392Z",
+    "url": "https://www.loft-prj.co.jp/schedule/loft",
+    "state": "completed",
+    "crawler_class": "LiveHouseWebsiteCrawler"
+  }
+},
+{
+  "model": "houses.livehousewebsite",
+  "pk": 13,
+  "fields": {
+    "created_datetime": "2025-07-05T08:04:43.882Z",
+    "updated_datetime": "2025-07-05T08:42:48.854Z",
+    "url": "https://www.fever-popo.com/",
+    "state": "completed",
+    "crawler_class": "LiveHouseWebsiteCrawler"
+  }
+},
+{
+  "model": "houses.livehousewebsite",
+  "pk": 14,
+  "fields": {
+    "created_datetime": "2025-07-05T08:04:49.201Z",
+    "updated_datetime": "2025-07-05T08:35:10.389Z",
+    "url": "https://www.loft-prj.co.jp/",
+    "state": "completed",
+    "crawler_class": "LiveHouseWebsiteCrawler"
+  }
+},
+{
+  "model": "houses.livehousewebsite",
+  "pk": 15,
+  "fields": {
+    "created_datetime": "2025-07-05T08:04:52.913Z",
+    "updated_datetime": "2025-07-05T08:35:13.814Z",
+    "url": "https://en.club-quattro.com/",
+    "state": "completed",
+    "crawler_class": "LiveHouseWebsiteCrawler"
+  }
+},
+{
+  "model": "houses.livehouse",
+  "pk": 3,
+  "fields": {
+    "created_datetime": "2025-07-05T07:10:27.611Z",
+    "updated_datetime": "2025-07-05T08:27:58.741Z",
+    "website": 1,
+    "name": "Shimokitazawa SHELTER",
+    "name_kana": "シモキタザワ シェルター",
+    "name_romaji": "Shimokitazawa SHELTER",
+    "phone_number": "03-3466-7430",
+    "address": "",
+    "capacity": 0,
+    "opened_date": "2000-01-01",
+    "closed_date": null,
+    "last_collected_datetime": "2025-07-05T08:27:58.741Z",
+    "last_collection_state": "success"
+  }
+},
+{
+  "model": "houses.livehouse",
+  "pk": 4,
+  "fields": {
+    "created_datetime": "2025-07-05T07:10:31.437Z",
+    "updated_datetime": "2025-07-05T08:28:07.708Z",
+    "website": 2,
+    "name": "Shibuya La.mama",
+    "name_kana": "シブヤ ラママ",
+    "name_romaji": "Shibuya La.mama",
+    "phone_number": "",
+    "address": "",
+    "capacity": 0,
+    "opened_date": "2000-01-01",
+    "closed_date": null,
+    "last_collected_datetime": "2025-07-05T08:28:07.708Z",
+    "last_collection_state": "success"
+  }
+},
+{
+  "model": "houses.livehouse",
+  "pk": 5,
+  "fields": {
+    "created_datetime": "2025-07-05T08:13:28.507Z",
+    "updated_datetime": "2025-07-05T08:28:10.606Z",
+    "website": 3,
+    "name": "Club Que",
+    "name_kana": "クラブ キュー",
+    "name_romaji": "Club Que",
+    "phone_number": "",
+    "address": "",
+    "capacity": 0,
+    "opened_date": "2000-01-01",
+    "closed_date": null,
+    "last_collected_datetime": "2025-07-05T08:28:10.606Z",
+    "last_collection_state": "success"
+  }
+},
+{
+  "model": "houses.livehouse",
+  "pk": 6,
+  "fields": {
+    "created_datetime": "2025-07-05T08:13:28.515Z",
+    "updated_datetime": "2025-07-05T08:28:10.787Z",
+    "website": 4,
+    "name": "Shibuya CYCLONE",
+    "name_kana": "シブヤ サイクロン",
+    "name_romaji": "Shibuya CYCLONE",
+    "phone_number": "",
+    "address": "",
+    "capacity": 0,
+    "opened_date": "2000-01-01",
+    "closed_date": null,
+    "last_collected_datetime": "2025-07-05T08:28:10.787Z",
+    "last_collection_state": "success"
+  }
+},
+{
+  "model": "houses.livehouse",
+  "pk": 7,
+  "fields": {
+    "created_datetime": "2025-07-05T08:13:28.517Z",
+    "updated_datetime": "2025-07-05T08:34:42.438Z",
+    "website": 5,
+    "name": "Shibuya CLUB QUATTRO",
+    "name_kana": "シブヤ クラブクアトロ",
+    "name_romaji": "Shibuya CLUB QUATTRO",
+    "phone_number": "03-3477-8750",
+    "address": "",
+    "capacity": 0,
+    "opened_date": "2000-01-01",
+    "closed_date": null,
+    "last_collected_datetime": "2025-07-05T08:34:42.438Z",
+    "last_collection_state": "success"
+  }
+},
+{
+  "model": "houses.livehouse",
+  "pk": 8,
+  "fields": {
+    "created_datetime": "2025-07-05T08:13:28.519Z",
+    "updated_datetime": "2025-07-05T08:42:41.792Z",
+    "website": 6,
+    "name": "Shibuya 7th Floor",
+    "name_kana": "シブヤ セブンスフロア",
+    "name_romaji": "Shibuya 7th Floor",
+    "phone_number": "03-3462-4466",
+    "address": "",
+    "capacity": 0,
+    "opened_date": "2000-01-01",
+    "closed_date": null,
+    "last_collected_datetime": "2025-07-05T08:42:41.792Z",
+    "last_collection_state": "success"
+  }
+},
+{
+  "model": "houses.livehouse",
+  "pk": 9,
+  "fields": {
+    "created_datetime": "2025-07-05T08:13:28.521Z",
+    "updated_datetime": "2025-07-05T08:42:42.432Z",
+    "website": 7,
+    "name": "Club Malcolm",
+    "name_kana": "クラブ マルコム",
+    "name_romaji": "Club Malcolm",
+    "phone_number": "03-6455-0225",
+    "address": "",
+    "capacity": 130,
+    "opened_date": "2000-01-01",
+    "closed_date": null,
+    "last_collected_datetime": "2025-07-05T08:42:42.432Z",
+    "last_collection_state": "success"
+  }
+},
+{
+  "model": "houses.livehouse",
+  "pk": 10,
+  "fields": {
+    "created_datetime": "2025-07-05T08:13:28.523Z",
+    "updated_datetime": "2025-07-05T08:13:28.523Z",
+    "website": 8,
+    "name": "UNIT",
+    "name_kana": "ユニット",
+    "name_romaji": "UNIT",
+    "phone_number": "",
+    "address": "",
+    "capacity": 0,
+    "opened_date": "2000-01-01",
+    "closed_date": null,
+    "last_collected_datetime": null,
+    "last_collection_state": "pending"
+  }
+},
+{
+  "model": "houses.livehouse",
+  "pk": 11,
+  "fields": {
+    "created_datetime": "2025-07-05T08:13:28.525Z",
+    "updated_datetime": "2025-07-05T08:35:07.083Z",
+    "website": 9,
+    "name": "Sangenjaya HEAVENS DOOR",
+    "name_kana": "サンゲンヂャヤ ヘブンズドア",
+    "name_romaji": "Sangenjaya HEAVENS DOOR",
+    "phone_number": "",
+    "address": "",
+    "capacity": 0,
+    "opened_date": "2000-01-01",
+    "closed_date": null,
+    "last_collected_datetime": "2025-07-05T08:35:07.083Z",
+    "last_collection_state": "success"
+  }
+},
+{
+  "model": "houses.livehouse",
+  "pk": 12,
+  "fields": {
+    "created_datetime": "2025-07-05T08:13:28.527Z",
+    "updated_datetime": "2025-07-05T08:35:07.900Z",
+    "website": 10,
+    "name": "Kichijoji WARP",
+    "name_kana": "キチジョウジ ワープ",
+    "name_romaji": "Kichijoji WARP",
+    "phone_number": "",
+    "address": "",
+    "capacity": 0,
+    "opened_date": "2000-01-01",
+    "closed_date": null,
+    "last_collected_datetime": "2025-07-05T08:35:07.900Z",
+    "last_collection_state": "success"
+  }
+},
+{
+  "model": "houses.livehouse",
+  "pk": 13,
+  "fields": {
+    "created_datetime": "2025-07-05T08:13:28.529Z",
+    "updated_datetime": "2025-07-05T08:35:08.679Z",
+    "website": 11,
+    "name": "Shinjuku FACE",
+    "name_kana": "シンジュク フェイス",
+    "name_romaji": "Shinjuku FACE",
+    "phone_number": "03-3200-1300",
+    "address": "東京都新宿区歌舞伎町",
+    "capacity": 0,
+    "opened_date": "2000-01-01",
+    "closed_date": null,
+    "last_collected_datetime": "2025-07-05T08:35:08.679Z",
+    "last_collection_state": "success"
+  }
+},
+{
+  "model": "houses.livehouse",
+  "pk": 14,
+  "fields": {
+    "created_datetime": "2025-07-05T08:13:28.530Z",
+    "updated_datetime": "2025-07-05T08:35:09.392Z",
+    "website": 12,
+    "name": "Shinjuku LOFT",
+    "name_kana": "シンジュク ロフト",
+    "name_romaji": "Shinjuku LOFT",
+    "phone_number": "03-5272-0382",
+    "address": "東京都新宿区歌舞伎町",
+    "capacity": 0,
+    "opened_date": "2000-01-01",
+    "closed_date": null,
+    "last_collected_datetime": "2025-07-05T08:35:09.392Z",
+    "last_collection_state": "success"
+  }
+},
+{
+  "model": "houses.livehouse",
+  "pk": 15,
+  "fields": {
+    "created_datetime": "2025-07-05T08:13:28.532Z",
+    "updated_datetime": "2025-07-05T08:42:48.854Z",
+    "website": 13,
+    "name": "FEVER",
+    "name_kana": "フィーバー",
+    "name_romaji": "FEVER",
+    "phone_number": "",
+    "address": "",
+    "capacity": 0,
+    "opened_date": "2000-01-01",
+    "closed_date": null,
+    "last_collected_datetime": "2025-07-05T08:42:48.854Z",
+    "last_collection_state": "success"
+  }
+},
+{
+  "model": "houses.livehouse",
+  "pk": 16,
+  "fields": {
+    "created_datetime": "2025-07-05T08:13:28.534Z",
+    "updated_datetime": "2025-07-05T08:35:10.388Z",
+    "website": 14,
+    "name": "LOFT PROJECT",
+    "name_kana": "ロフト プロジェクト",
+    "name_romaji": "LOFT PROJECT",
+    "phone_number": "",
+    "address": "",
+    "capacity": 0,
+    "opened_date": "2000-01-01",
+    "closed_date": null,
+    "last_collected_datetime": "2025-07-05T08:35:10.388Z",
+    "last_collection_state": "success"
+  }
+},
+{
+  "model": "houses.livehouse",
+  "pk": 17,
+  "fields": {
+    "created_datetime": "2025-07-05T08:13:28.535Z",
+    "updated_datetime": "2025-07-05T08:35:13.814Z",
+    "website": 15,
+    "name": "CLUB QUATTRO",
+    "name_kana": "クラブクアトロ",
+    "name_romaji": "CLUB QUATTRO",
+    "phone_number": "",
+    "address": "",
+    "capacity": 0,
+    "opened_date": "2000-01-01",
+    "closed_date": null,
+    "last_collected_datetime": "2025-07-05T08:35:13.814Z",
+    "last_collection_state": "success"
+  }
+},
+{
+  "model": "houses.performanceschedule",
+  "pk": 69,
+  "fields": {
+    "live_house": 8,
+    "performance_date": "2025-02-03",
+    "open_time": "18:30:00",
+    "start_time": "19:00:00",
+    "performers": [
+      162,
+      163
+    ]
+  }
+},
+{
+  "model": "houses.performanceschedule",
+  "pk": 70,
+  "fields": {
+    "live_house": 8,
+    "performance_date": "2025-03-11",
+    "open_time": "18:30:00",
+    "start_time": "19:00:00",
+    "performers": [
+      164,
+      165
+    ]
+  }
+},
+{
+  "model": "houses.performanceschedule",
+  "pk": 71,
+  "fields": {
+    "live_house": 8,
+    "performance_date": "2025-05-30",
+    "open_time": "18:30:00",
+    "start_time": "19:00:00",
+    "performers": [
+      166,
+      167
+    ]
+  }
+},
+{
+  "model": "houses.performanceschedule",
+  "pk": 72,
+  "fields": {
+    "live_house": 9,
+    "performance_date": "2025-06-15",
+    "open_time": "18:30:00",
+    "start_time": "18:30:00",
+    "performers": [
+      169,
+      170,
+      168
+    ]
+  }
+},
+{
+  "model": "houses.performanceschedule",
+  "pk": 73,
+  "fields": {
+    "live_house": 9,
+    "performance_date": "2025-06-27",
+    "open_time": "18:30:00",
+    "start_time": "18:30:00",
+    "performers": [
+      169,
+      170,
+      171
+    ]
+  }
+},
+{
+  "model": "houses.performanceschedule",
+  "pk": 74,
+  "fields": {
+    "live_house": 9,
+    "performance_date": "2025-06-30",
+    "open_time": "18:30:00",
+    "start_time": "18:30:00",
+    "performers": [
+      170,
+      171
+    ]
+  }
+},
+{
+  "model": "houses.performanceschedule",
+  "pk": 75,
+  "fields": {
+    "live_house": 9,
+    "performance_date": "2025-07-07",
+    "open_time": "18:30:00",
+    "start_time": "18:30:00",
+    "performers": [
+      171,
+      172
+    ]
+  }
+},
+{
+  "model": "houses.performanceschedule",
+  "pk": 76,
+  "fields": {
+    "live_house": 9,
+    "performance_date": "2025-07-12",
+    "open_time": "18:30:00",
+    "start_time": "18:30:00",
+    "performers": [
+      173
+    ]
+  }
+},
+{
+  "model": "houses.performanceschedule",
+  "pk": 77,
+  "fields": {
+    "live_house": 9,
+    "performance_date": "2025-07-05",
+    "open_time": "18:30:00",
+    "start_time": "10:00:00",
+    "performers": [
+      175,
+      174
+    ]
+  }
+},
+{
+  "model": "houses.performanceschedule",
+  "pk": 78,
+  "fields": {
+    "live_house": 9,
+    "performance_date": "2025-07-19",
+    "open_time": "18:30:00",
+    "start_time": "10:00:00",
+    "performers": [
+      175,
+      174
+    ]
+  }
+},
+{
+  "model": "houses.performanceschedule",
+  "pk": 79,
+  "fields": {
+    "live_house": 9,
+    "performance_date": "2025-07-06",
+    "open_time": "18:30:00",
+    "start_time": "16:00:00",
+    "performers": [
+      177,
+      176
+    ]
+  }
+},
+{
+  "model": "houses.performanceschedule",
+  "pk": 80,
+  "fields": {
+    "live_house": 9,
+    "performance_date": "2025-07-08",
+    "open_time": "18:30:00",
+    "start_time": "18:00:00",
+    "performers": [
+      178,
+      179
+    ]
+  }
+},
+{
+  "model": "houses.performanceschedule",
+  "pk": 81,
+  "fields": {
+    "live_house": 9,
+    "performance_date": "2025-07-09",
+    "open_time": "18:30:00",
+    "start_time": "18:00:00",
+    "performers": [
+      182,
+      181,
+      180
+    ]
+  }
+},
+{
+  "model": "houses.performanceschedule",
+  "pk": 82,
+  "fields": {
+    "live_house": 9,
+    "performance_date": "2025-07-10",
+    "open_time": "18:30:00",
+    "start_time": "18:30:00",
+    "performers": [
+      184,
+      183
+    ]
+  }
+},
+{
+  "model": "houses.performanceschedule",
+  "pk": 83,
+  "fields": {
+    "live_house": 9,
+    "performance_date": "2025-07-11",
+    "open_time": "18:30:00",
+    "start_time": "18:30:00",
+    "performers": [
+      185
+    ]
+  }
+},
+{
+  "model": "houses.performanceschedule",
+  "pk": 84,
+  "fields": {
+    "live_house": 9,
+    "performance_date": "2025-07-26",
+    "open_time": "18:30:00",
+    "start_time": "18:30:00",
+    "performers": [
+      188,
+      187,
+      186
+    ]
+  }
+},
+{
+  "model": "houses.performanceschedule",
+  "pk": 85,
+  "fields": {
+    "live_house": 9,
+    "performance_date": "2025-07-13",
+    "open_time": "18:30:00",
+    "start_time": "17:15:00",
+    "performers": [
+      190,
+      189,
+      191
+    ]
+  }
+},
+{
+  "model": "houses.performanceschedule",
+  "pk": 86,
+  "fields": {
+    "live_house": 9,
+    "performance_date": "2025-06-22",
+    "open_time": "18:30:00",
+    "start_time": "16:40:00",
+    "performers": [
+      192,
+      193
+    ]
+  }
+},
+{
+  "model": "houses.performanceschedule",
+  "pk": 87,
+  "fields": {
+    "live_house": 9,
+    "performance_date": "2025-07-14",
+    "open_time": "18:30:00",
+    "start_time": "16:40:00",
+    "performers": [
+      192,
+      193
+    ]
+  }
+},
+{
+  "model": "houses.performanceschedule",
+  "pk": 88,
+  "fields": {
+    "live_house": 9,
+    "performance_date": "2025-07-15",
+    "open_time": "18:30:00",
+    "start_time": "18:20:00",
+    "performers": [
+      194,
+      195
+    ]
+  }
+},
+{
+  "model": "houses.performanceschedule",
+  "pk": 89,
+  "fields": {
+    "live_house": 9,
+    "performance_date": "2025-07-16",
+    "open_time": "18:30:00",
+    "start_time": "18:30:00",
+    "performers": [
+      196,
+      179
+    ]
+  }
+},
+{
+  "model": "houses.performanceschedule",
+  "pk": 90,
+  "fields": {
+    "live_house": 9,
+    "performance_date": "2025-07-18",
+    "open_time": "18:30:00",
+    "start_time": "18:45:00",
+    "performers": [
+      198,
+      197
+    ]
+  }
+},
+{
+  "model": "houses.performanceschedule",
+  "pk": 91,
+  "fields": {
+    "live_house": 9,
+    "performance_date": "2025-07-20",
+    "open_time": "18:30:00",
+    "start_time": "17:30:00",
+    "performers": [
+      179
+    ]
+  }
+},
+{
+  "model": "houses.performanceschedule",
+  "pk": 92,
+  "fields": {
+    "live_house": 15,
+    "performance_date": "2025-05-21",
+    "open_time": "18:30:00",
+    "start_time": "19:00:00",
+    "performers": [
+      199,
+      200
+    ]
+  }
+},
+{
+  "model": "houses.performanceschedule",
+  "pk": 93,
+  "fields": {
+    "live_house": 15,
+    "performance_date": "2025-06-13",
+    "open_time": "18:30:00",
+    "start_time": "20:00:00",
+    "performers": [
+      201,
+      202,
+      203
+    ]
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 162,
+  "fields": {
+    "created_datetime": "2025-07-05T08:42:41.786Z",
+    "updated_datetime": "2025-07-05T08:42:41.787Z",
+    "name": "【DJ】 AGE-POYO / K-GOTHOD / nushi / あらいぐま MC / DJ ク",
+    "name_kana": "【DJ】 AGE-POYO / K-GOTHOD / nushi / あらいぐま MC / DJ ク",
+    "name_romaji": "【DJ】 AGE-POYO / K-GOTHOD / nushi / あらいぐま MC / DJ ク",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 163,
+  "fields": {
+    "created_datetime": "2025-07-05T08:42:41.787Z",
+    "updated_datetime": "2025-07-05T08:42:41.787Z",
+    "name": "ネット予約電話予約店頭販売",
+    "name_kana": "ネット予約電話予約店頭販売",
+    "name_romaji": "ネット予約電話予約店頭販売",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 164,
+  "fields": {
+    "created_datetime": "2025-07-05T08:42:41.789Z",
+    "updated_datetime": "2025-07-05T08:42:41.789Z",
+    "name": "”SHIBUYA TANGO CLUB”",
+    "name_kana": "”SHIBUYA TANGO CLUB”",
+    "name_romaji": "”SHIBUYA TANGO CLUB”",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 165,
+  "fields": {
+    "created_datetime": "2025-07-05T08:42:41.789Z",
+    "updated_datetime": "2025-07-05T08:42:41.790Z",
+    "name": "先日の大雪の影響で延期となった7th Floor でのイベント、”SHIBUYA TANGO CLU",
+    "name_kana": "先日の大雪の影響で延期となった7th Floor でのイベント、”SHIBUYA TANGO CLU",
+    "name_romaji": "先日の大雪の影響で延期となった7th Floor でのイベント、”SHIBUYA TANGO CLU",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 166,
+  "fields": {
+    "created_datetime": "2025-07-05T08:42:41.791Z",
+    "updated_datetime": "2025-07-05T08:42:41.791Z",
+    "name": "”「SPA！」 -7thFLOOR × WOMBLOUNGE presents-”",
+    "name_kana": "”「SPA！」 -7thFLOOR × WOMBLOUNGE presents-”",
+    "name_romaji": "”「SPA！」 -7thFLOOR × WOMBLOUNGE presents-”",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 167,
+  "fields": {
+    "created_datetime": "2025-07-05T08:42:41.791Z",
+    "updated_datetime": "2025-07-05T08:42:41.791Z",
+    "name": "渋谷円山町に通るランブリングストリートに面した「7thFLOOR」 そこから裏ランブリングストリート",
+    "name_kana": "渋谷円山町に通るランブリングストリートに面した「7thFLOOR」 そこから裏ランブリングストリート",
+    "name_romaji": "渋谷円山町に通るランブリングストリートに面した「7thFLOOR」 そこから裏ランブリングストリート",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 168,
+  "fields": {
+    "created_datetime": "2025-07-05T08:42:42.394Z",
+    "updated_datetime": "2025-07-05T08:42:42.394Z",
+    "name": "約に関するお問い合わせは対応できかねます",
+    "name_kana": "約に関するお問い合わせは対応できかねます",
+    "name_romaji": "約に関するお問い合わせは対応できかねます",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 169,
+  "fields": {
+    "created_datetime": "2025-07-05T08:42:42.395Z",
+    "updated_datetime": "2025-07-05T08:42:42.396Z",
+    "name": "8/4(MON",
+    "name_kana": "8/4(MON",
+    "name_romaji": "8/4(MON",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 170,
+  "fields": {
+    "created_datetime": "2025-07-05T08:42:42.397Z",
+    "updated_datetime": "2025-07-05T08:42:42.397Z",
+    "name": "Jin-Machineワンマンミサ",
+    "name_kana": "Jin-Machineワンマンミサ",
+    "name_romaji": "Jin-Machineワンマンミサ",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 171,
+  "fields": {
+    "created_datetime": "2025-07-05T08:42:42.399Z",
+    "updated_datetime": "2025-07-05T08:42:42.399Z",
+    "name": "『じごくのしご終わ夏合宿〜初日〜』",
+    "name_kana": "『じごくのしご終わ夏合宿〜初日〜』",
+    "name_romaji": "『じごくのしご終わ夏合宿〜初日〜』",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 172,
+  "fields": {
+    "created_datetime": "2025-07-05T08:42:42.401Z",
+    "updated_datetime": "2025-07-05T08:42:42.402Z",
+    "name": "ンミサ",
+    "name_kana": "ンミサ",
+    "name_romaji": "ンミサ",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 173,
+  "fields": {
+    "created_datetime": "2025-07-05T08:42:42.403Z",
+    "updated_datetime": "2025-07-05T08:42:42.403Z",
+    "name": "Jin-Machine",
+    "name_kana": "Jin-Machine",
+    "name_romaji": "Jin-Machine",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 174,
+  "fields": {
+    "created_datetime": "2025-07-05T08:42:42.405Z",
+    "updated_datetime": "2025-07-05T08:42:42.405Z",
+    "name": "Menu",
+    "name_kana": "Menu",
+    "name_romaji": "Menu",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 175,
+  "fields": {
+    "created_datetime": "2025-07-05T08:42:42.405Z",
+    "updated_datetime": "2025-07-05T08:42:42.405Z",
+    "name": "CLUB EVENT",
+    "name_kana": "CLUB EVENT",
+    "name_romaji": "CLUB EVENT",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 176,
+  "fields": {
+    "created_datetime": "2025-07-05T08:42:42.408Z",
+    "updated_datetime": "2025-07-05T08:42:42.408Z",
+    "name": "やと",
+    "name_kana": "SHOOON / やと",
+    "name_romaji": "SHOOON",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 177,
+  "fields": {
+    "created_datetime": "2025-07-05T08:42:42.408Z",
+    "updated_datetime": "2025-07-05T08:42:42.409Z",
+    "name": "まん(今回お休み) / ちゃんぢゃ / ゆい(今回お休み",
+    "name_kana": "まん(今回お休み) / ちゃんぢゃ / ゆい(今回お休み",
+    "name_romaji": "まん(今回お休み) / ちゃんぢゃ / ゆい(今回お休み",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 178,
+  "fields": {
+    "created_datetime": "2025-07-05T08:42:42.410Z",
+    "updated_datetime": "2025-07-05T08:42:42.410Z",
+    "name": "DD予約 +",
+    "name_kana": "DD予約 +",
+    "name_romaji": "DD予約 +",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 179,
+  "fields": {
+    "created_datetime": "2025-07-05T08:42:42.411Z",
+    "updated_datetime": "2025-07-05T08:42:42.411Z",
+    "name": "TIGET",
+    "name_kana": "TIGET",
+    "name_romaji": "TIGET",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 180,
+  "fields": {
+    "created_datetime": "2025-07-05T08:42:42.412Z",
+    "updated_datetime": "2025-07-05T08:42:42.412Z",
+    "name": "みです。当日受付にて予約入場料＋ドリンク代をお支払いください",
+    "name_kana": "みです。当日受付にて予約入場料＋ドリンク代をお支払いください",
+    "name_romaji": "みです。当日受付にて予約入場料＋ドリンク代をお支払いください",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 181,
+  "fields": {
+    "created_datetime": "2025-07-05T08:42:42.413Z",
+    "updated_datetime": "2025-07-05T08:42:42.413Z",
+    "name": "※静止画、動画の撮影可否は演者様ごとに異なります",
+    "name_kana": "※静止画、動画の撮影可否は演者様ごとに異なります",
+    "name_romaji": "※静止画、動画の撮影可否は演者様ごとに異なります",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 182,
+  "fields": {
+    "created_datetime": "2025-07-05T08:42:42.413Z",
+    "updated_datetime": "2025-07-05T08:42:42.413Z",
+    "name": "7/8(TUE",
+    "name_kana": "7/8(TUE",
+    "name_romaji": "7/8(TUE",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 183,
+  "fields": {
+    "created_datetime": "2025-07-05T08:42:42.414Z",
+    "updated_datetime": "2025-07-05T08:42:42.415Z",
+    "name": "らえる定期公演",
+    "name_kana": "らえる定期公演",
+    "name_romaji": "らえる定期公演",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 184,
+  "fields": {
+    "created_datetime": "2025-07-05T08:42:42.415Z",
+    "updated_datetime": "2025-07-05T08:42:42.415Z",
+    "name": "『ELCOM TOKYO Vol.56』",
+    "name_kana": "『ELCOM TOKYO Vol.56』",
+    "name_romaji": "『ELCOM TOKYO Vol.56』",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 185,
+  "fields": {
+    "created_datetime": "2025-07-05T08:42:42.416Z",
+    "updated_datetime": "2025-07-05T08:42:42.417Z",
+    "name": "女性無料",
+    "name_kana": "女性無料",
+    "name_romaji": "女性無料",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 186,
+  "fields": {
+    "created_datetime": "2025-07-05T08:42:42.418Z",
+    "updated_datetime": "2025-07-05T08:42:42.418Z",
+    "name": "ありません",
+    "name_kana": "ありません",
+    "name_romaji": "ありません",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 187,
+  "fields": {
+    "created_datetime": "2025-07-05T08:42:42.418Z",
+    "updated_datetime": "2025-07-05T08:42:42.419Z",
+    "name": "※再入場は1DRINKで可能",
+    "name_kana": "※再入場は1DRINKで可能",
+    "name_romaji": "※再入場は1DRINKで可能",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 188,
+  "fields": {
+    "created_datetime": "2025-07-05T08:42:42.419Z",
+    "updated_datetime": "2025-07-05T08:42:42.419Z",
+    "name": "7/10(THU",
+    "name_kana": "7/10(THU",
+    "name_romaji": "7/10(THU",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 189,
+  "fields": {
+    "created_datetime": "2025-07-05T08:42:42.420Z",
+    "updated_datetime": "2025-07-05T08:42:42.421Z",
+    "name": "ketDive",
+    "name_kana": "ketDive",
+    "name_romaji": "ketDive",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 190,
+  "fields": {
+    "created_datetime": "2025-07-05T08:42:42.421Z",
+    "updated_datetime": "2025-07-05T08:42:42.421Z",
+    "name": "7/12(SAT",
+    "name_kana": "7/12(SAT",
+    "name_romaji": "7/12(SAT",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 191,
+  "fields": {
+    "created_datetime": "2025-07-05T08:42:42.422Z",
+    "updated_datetime": "2025-07-05T08:42:42.422Z",
+    "name": "『LIVE!LIVE!LIVE! Vol.15 ～夏の始まりSP～』",
+    "name_kana": "『LIVE!LIVE!LIVE! Vol.15 ～夏の始まりSP～』",
+    "name_romaji": "『LIVE!LIVE!LIVE! Vol.15 ～夏の始まりSP～』",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 192,
+  "fields": {
+    "created_datetime": "2025-07-05T08:42:42.423Z",
+    "updated_datetime": "2025-07-05T08:42:42.423Z",
+    "name": "7/13(SUN",
+    "name_kana": "7/13(SUN",
+    "name_romaji": "7/13(SUN",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 193,
+  "fields": {
+    "created_datetime": "2025-07-05T08:42:42.424Z",
+    "updated_datetime": "2025-07-05T08:42:42.424Z",
+    "name": "『【キンハイサイ】 vol.3』 #キンハイサイ",
+    "name_kana": "『【キンハイサイ】 vol.3』 #キンハイサイ",
+    "name_romaji": "『【キンハイサイ】 vol.3』 #キンハイサイ",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 194,
+  "fields": {
+    "created_datetime": "2025-07-05T08:42:42.426Z",
+    "updated_datetime": "2025-07-05T08:42:42.427Z",
+    "name": "『anniversary of meeting vol.12 ～出会いの記念日～』",
+    "name_kana": "『anniversary of meeting vol.12 ～出会いの記念日～』",
+    "name_romaji": "『anniversary of meeting vol.12 ～出会いの記念日～』",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 195,
+  "fields": {
+    "created_datetime": "2025-07-05T08:42:42.427Z",
+    "updated_datetime": "2025-07-05T08:42:42.427Z",
+    "name": "マエノミドリ",
+    "name_kana": "マエノミドリ",
+    "name_romaji": "マエノミドリ",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 196,
+  "fields": {
+    "created_datetime": "2025-07-05T08:42:42.429Z",
+    "updated_datetime": "2025-07-05T08:42:42.429Z",
+    "name": "7/15(TUE",
+    "name_kana": "7/15(TUE",
+    "name_romaji": "7/15(TUE",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 197,
+  "fields": {
+    "created_datetime": "2025-07-05T08:42:42.430Z",
+    "updated_datetime": "2025-07-05T08:42:42.430Z",
+    "name": "第7回定期公演』",
+    "name_kana": "第7回定期公演』",
+    "name_romaji": "第7回定期公演』",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 198,
+  "fields": {
+    "created_datetime": "2025-07-05T08:42:42.431Z",
+    "updated_datetime": "2025-07-05T08:42:42.431Z",
+    "name": "PRIMA.",
+    "name_kana": "PRIMA.",
+    "name_romaji": "PRIMA.",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 199,
+  "fields": {
+    "created_datetime": "2025-07-05T08:42:48.850Z",
+    "updated_datetime": "2025-07-05T08:42:48.850Z",
+    "name": "00 (+1drink) THANK YOU SOLD OUT!!!",
+    "name_kana": "00 (+1drink) THANK YOU SOLD OUT!!!",
+    "name_romaji": "00 (+1drink) THANK YOU SOLD OUT!!!",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 200,
+  "fields": {
+    "created_datetime": "2025-07-05T08:42:48.850Z",
+    "updated_datetime": "2025-07-05T08:42:48.851Z",
+    "name": "â»1drink ï¿",
+    "name_kana": "â»1drink ï¿",
+    "name_romaji": "â»1drink ï¿",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 201,
+  "fields": {
+    "created_datetime": "2025-07-05T08:42:48.852Z",
+    "updated_datetime": "2025-07-05T08:42:48.852Z",
+    "name": "Mr HOT DOGãã®ããã«å­å¨ããã¨è¨ã£ã",
+    "name_kana": "Mr HOT DOGãã®ããã«å­å¨ããã¨è¨ã£ã",
+    "name_romaji": "Mr HOT DOGãã®ããã«å­å¨ããã¨è¨ã£ã",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 202,
+  "fields": {
+    "created_datetime": "2025-07-05T08:42:48.852Z",
+    "updated_datetime": "2025-07-05T08:42:48.853Z",
+    "name": "ãããªéå½çãªæ¥ã«ãROYãèªãä»æã",
+    "name_kana": "ãããªéå½çãªæ¥ã«ãROYãèªãä»æã",
+    "name_romaji": "ãããªéå½çãªæ¥ã«ãROYãèªãä»æã",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 203,
+  "fields": {
+    "created_datetime": "2025-07-05T08:42:48.853Z",
+    "updated_datetime": "2025-07-05T08:42:48.853Z",
+    "name": "ãã±ããã¯6/13(é)ããTHE BAWDIES CLU",
+    "name_kana": "ãã±ããã¯6/13(é)ããTHE BAWDIES CLU",
+    "name_romaji": "ãã±ããã¯6/13(é)ããTHE BAWDIES CLU",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+}
+]

@@ -1,0 +1,690 @@
+[
+{
+  "model": "houses.livehousewebsite",
+  "pk": 1,
+  "fields": {
+    "created_datetime": "2025-07-05T07:08:44.103Z",
+    "updated_datetime": "2025-07-05T07:23:08.565Z",
+    "url": "https://www.loft-prj.co.jp/schedule/shelter",
+    "state": "completed",
+    "crawler_class": "LoftProjectShelterCrawler"
+  }
+},
+{
+  "model": "houses.livehousewebsite",
+  "pk": 2,
+  "fields": {
+    "created_datetime": "2025-07-05T07:08:44.105Z",
+    "updated_datetime": "2025-07-05T07:23:13.910Z",
+    "url": "https://www.lamama.net/",
+    "state": "completed",
+    "crawler_class": "LaMamaCrawler"
+  }
+},
+{
+  "model": "houses.livehouse",
+  "pk": 3,
+  "fields": {
+    "created_datetime": "2025-07-05T07:10:27.611Z",
+    "updated_datetime": "2025-07-05T07:23:08.038Z",
+    "website": 1,
+    "name": "Shimokitazawa SHELTER",
+    "name_kana": "シモキタザワ シェルター",
+    "name_romaji": "Shimokitazawa SHELTER",
+    "phone_number": "03-3466-7430",
+    "address": "",
+    "capacity": 0,
+    "opened_date": "2000-01-01",
+    "closed_date": null
+  }
+},
+{
+  "model": "houses.livehouse",
+  "pk": 4,
+  "fields": {
+    "created_datetime": "2025-07-05T07:10:31.437Z",
+    "updated_datetime": "2025-07-05T07:23:10.283Z",
+    "website": 2,
+    "name": "Shibuya La.mama",
+    "name_kana": "シブヤ ラママ",
+    "name_romaji": "Shibuya La.mama",
+    "phone_number": "",
+    "address": "",
+    "capacity": 0,
+    "opened_date": "2000-01-01",
+    "closed_date": null
+  }
+},
+{
+  "model": "houses.performanceschedule",
+  "pk": 1,
+  "fields": {
+    "live_house": 3,
+    "performance_date": "2025-07-05",
+    "open_time": "18:00:00",
+    "start_time": "18:30:00",
+    "performers": [
+      16,
+      18,
+      1,
+      19,
+      17
+    ]
+  }
+},
+{
+  "model": "houses.performanceschedule",
+  "pk": 2,
+  "fields": {
+    "live_house": 3,
+    "performance_date": "2025-07-06",
+    "open_time": "18:00:00",
+    "start_time": "18:30:00",
+    "performers": [
+      20,
+      21,
+      22
+    ]
+  }
+},
+{
+  "model": "houses.performanceschedule",
+  "pk": 3,
+  "fields": {
+    "live_house": 3,
+    "performance_date": "2025-07-07",
+    "open_time": "18:00:00",
+    "start_time": "18:30:00",
+    "performers": [
+      23,
+      24
+    ]
+  }
+},
+{
+  "model": "houses.performanceschedule",
+  "pk": 4,
+  "fields": {
+    "live_house": 3,
+    "performance_date": "2025-07-08",
+    "open_time": "18:00:00",
+    "start_time": "18:30:00",
+    "performers": [
+      27,
+      26,
+      25
+    ]
+  }
+},
+{
+  "model": "houses.performanceschedule",
+  "pk": 5,
+  "fields": {
+    "live_house": 3,
+    "performance_date": "2025-07-09",
+    "open_time": "18:00:00",
+    "start_time": "18:30:00",
+    "performers": [
+      30,
+      29,
+      28
+    ]
+  }
+},
+{
+  "model": "houses.performanceschedule",
+  "pk": 6,
+  "fields": {
+    "live_house": 3,
+    "performance_date": "2025-07-10",
+    "open_time": "18:00:00",
+    "start_time": "18:30:00",
+    "performers": [
+      33,
+      32,
+      31
+    ]
+  }
+},
+{
+  "model": "houses.performanceschedule",
+  "pk": 7,
+  "fields": {
+    "live_house": 3,
+    "performance_date": "2025-07-11",
+    "open_time": "18:00:00",
+    "start_time": "18:30:00",
+    "performers": [
+      34,
+      35
+    ]
+  }
+},
+{
+  "model": "houses.performanceschedule",
+  "pk": 8,
+  "fields": {
+    "live_house": 3,
+    "performance_date": "2025-07-12",
+    "open_time": "18:00:00",
+    "start_time": "18:30:00",
+    "performers": [
+      18,
+      36,
+      37,
+      1
+    ]
+  }
+},
+{
+  "model": "houses.performanceschedule",
+  "pk": 9,
+  "fields": {
+    "live_house": 3,
+    "performance_date": "2025-07-13",
+    "open_time": "18:00:00",
+    "start_time": "18:30:00",
+    "performers": [
+      18,
+      20,
+      38,
+      39
+    ]
+  }
+},
+{
+  "model": "houses.performanceschedule",
+  "pk": 10,
+  "fields": {
+    "live_house": 3,
+    "performance_date": "2025-07-14",
+    "open_time": "18:00:00",
+    "start_time": "18:30:00",
+    "performers": [
+      23,
+      40,
+      41
+    ]
+  }
+},
+{
+  "model": "houses.performanceschedule",
+  "pk": 11,
+  "fields": {
+    "live_house": 3,
+    "performance_date": "2025-07-15",
+    "open_time": "18:00:00",
+    "start_time": "18:30:00",
+    "performers": [
+      42,
+      25,
+      43
+    ]
+  }
+},
+{
+  "model": "houses.performanceschedule",
+  "pk": 12,
+  "fields": {
+    "live_house": 3,
+    "performance_date": "2025-07-16",
+    "open_time": "18:00:00",
+    "start_time": "18:30:00",
+    "performers": [
+      44,
+      45,
+      46,
+      28,
+      22
+    ]
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 1,
+  "fields": {
+    "created_datetime": "2025-07-05T07:22:14.345Z",
+    "updated_datetime": "2025-07-05T07:22:14.345Z",
+    "name": "Saturday",
+    "name_kana": "",
+    "name_romaji": "",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 16,
+  "fields": {
+    "created_datetime": "2025-07-05T07:23:08.489Z",
+    "updated_datetime": "2025-07-05T07:23:08.489Z",
+    "name": "“ANOTHER WORLD”",
+    "name_kana": "“ANOTHER WORLD”",
+    "name_romaji": "“ANOTHER WORLD”",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 17,
+  "fields": {
+    "created_datetime": "2025-07-05T07:23:08.492Z",
+    "updated_datetime": "2025-07-05T07:23:08.492Z",
+    "name": "THE POGO",
+    "name_kana": "THE POGO",
+    "name_romaji": "THE POGO",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 18,
+  "fields": {
+    "created_datetime": "2025-07-05T07:23:08.496Z",
+    "updated_datetime": "2025-07-05T07:23:08.496Z",
+    "name": "DAY EVENT",
+    "name_kana": "DAY EVENT",
+    "name_romaji": "DAY EVENT",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 19,
+  "fields": {
+    "created_datetime": "2025-07-05T07:23:08.498Z",
+    "updated_datetime": "2025-07-05T07:23:08.498Z",
+    "name": "tact presents “close to home”  Digital Single “Unfading” Release Event",
+    "name_kana": "tact presents “close to home”  Digital Single “Unfading” Release Event",
+    "name_romaji": "tact presents “close to home”  Digital Single “Unfading” Release Event",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 20,
+  "fields": {
+    "created_datetime": "2025-07-05T07:23:08.501Z",
+    "updated_datetime": "2025-07-05T07:23:08.501Z",
+    "name": "Sunday",
+    "name_kana": "Sunday",
+    "name_romaji": "Sunday",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 21,
+  "fields": {
+    "created_datetime": "2025-07-05T07:23:08.502Z",
+    "updated_datetime": "2025-07-05T07:23:08.502Z",
+    "name": "TENGA生誕年前夜 “愛と自由と下北沢”",
+    "name_kana": "TENGA生誕年前夜 “愛と自由と下北沢”",
+    "name_romaji": "TENGA生誕年前夜 “愛と自由と下北沢”",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 22,
+  "fields": {
+    "created_datetime": "2025-07-05T07:23:08.504Z",
+    "updated_datetime": "2025-07-05T07:23:08.504Z",
+    "name": "予約",
+    "name_kana": "予約",
+    "name_romaji": "予約",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 23,
+  "fields": {
+    "created_datetime": "2025-07-05T07:23:08.506Z",
+    "updated_datetime": "2025-07-05T07:23:08.506Z",
+    "name": "Monday",
+    "name_kana": "Monday",
+    "name_romaji": "Monday",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 24,
+  "fields": {
+    "created_datetime": "2025-07-05T07:23:08.508Z",
+    "updated_datetime": "2025-07-05T07:23:08.508Z",
+    "name": "「Seventh Sense- 下北沢SHELTER 編 -」",
+    "name_kana": "「Seventh Sense- 下北沢SHELTER 編 -」",
+    "name_romaji": "「Seventh Sense- 下北沢SHELTER 編 -」",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 25,
+  "fields": {
+    "created_datetime": "2025-07-05T07:23:08.512Z",
+    "updated_datetime": "2025-07-05T07:23:08.512Z",
+    "name": "Tuesday",
+    "name_kana": "Tuesday",
+    "name_romaji": "Tuesday",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 26,
+  "fields": {
+    "created_datetime": "2025-07-05T07:23:08.515Z",
+    "updated_datetime": "2025-07-05T07:23:08.515Z",
+    "name": "Rega × QOOPIE pre. 『TWO MAN』",
+    "name_kana": "Rega × QOOPIE pre. 『TWO MAN』",
+    "name_romaji": "Rega × QOOPIE pre. 『TWO MAN』",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 27,
+  "fields": {
+    "created_datetime": "2025-07-05T07:23:08.518Z",
+    "updated_datetime": "2025-07-05T07:23:08.518Z",
+    "name": "RegaQOOPIE",
+    "name_kana": "RegaQOOPIE",
+    "name_romaji": "RegaQOOPIE",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 28,
+  "fields": {
+    "created_datetime": "2025-07-05T07:23:08.522Z",
+    "updated_datetime": "2025-07-05T07:23:08.522Z",
+    "name": "Wednesday",
+    "name_kana": "Wednesday",
+    "name_romaji": "Wednesday",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 29,
+  "fields": {
+    "created_datetime": "2025-07-05T07:23:08.524Z",
+    "updated_datetime": "2025-07-05T07:23:08.524Z",
+    "name": "SHELTER & ROCKATERIA presents. ” SHELROCKA “",
+    "name_kana": "SHELTER & ROCKATERIA presents. ” SHELROCKA “",
+    "name_romaji": "SHELTER & ROCKATERIA presents. ” SHELROCKA “",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 30,
+  "fields": {
+    "created_datetime": "2025-07-05T07:23:08.525Z",
+    "updated_datetime": "2025-07-05T07:23:08.525Z",
+    "name": "aureliaロッカANOMIE...",
+    "name_kana": "aureliaロッカANOMIE...",
+    "name_romaji": "aureliaロッカANOMIE...",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 31,
+  "fields": {
+    "created_datetime": "2025-07-05T07:23:08.528Z",
+    "updated_datetime": "2025-07-05T07:23:08.528Z",
+    "name": "Thursday",
+    "name_kana": "Thursday",
+    "name_romaji": "Thursday",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 32,
+  "fields": {
+    "created_datetime": "2025-07-05T07:23:08.530Z",
+    "updated_datetime": "2025-07-05T07:23:08.530Z",
+    "name": "Hello Hello presents  『Asterism』  supported by ENDSCAPEHello Hello presents  『Asterism』  supported by ENDSCAPE",
+    "name_kana": "Hello Hello presents  『Asterism』  supported by ENDSCAPEHello Hello presents  『Asterism』  supported by ENDSCAPE",
+    "name_romaji": "Hello Hello presents  『Asterism』  supported by ENDSCAPEHello Hello presents  『Asterism』  supported by ENDSCAPE",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 33,
+  "fields": {
+    "created_datetime": "2025-07-05T07:23:08.531Z",
+    "updated_datetime": "2025-07-05T07:23:08.531Z",
+    "name": "Hello HelloHwylライティライト",
+    "name_kana": "Hello HelloHwylライティライト",
+    "name_romaji": "Hello HelloHwylライティライト",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 34,
+  "fields": {
+    "created_datetime": "2025-07-05T07:23:08.535Z",
+    "updated_datetime": "2025-07-05T07:23:08.535Z",
+    "name": "Friday",
+    "name_kana": "Friday",
+    "name_romaji": "Friday",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 35,
+  "fields": {
+    "created_datetime": "2025-07-05T07:23:08.536Z",
+    "updated_datetime": "2025-07-05T07:23:08.536Z",
+    "name": "Oaiko pre.「みちしるべ」",
+    "name_kana": "Oaiko pre.「みちしるべ」",
+    "name_romaji": "Oaiko pre.「みちしるべ」",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 36,
+  "fields": {
+    "created_datetime": "2025-07-05T07:23:08.541Z",
+    "updated_datetime": "2025-07-05T07:23:08.541Z",
+    "name": "NOIMAGE pre. ギャグにしてしまおうぜ",
+    "name_kana": "NOIMAGE pre. ギャグにしてしまおうぜ",
+    "name_romaji": "NOIMAGE pre. ギャグにしてしまおうぜ",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 37,
+  "fields": {
+    "created_datetime": "2025-07-05T07:23:08.543Z",
+    "updated_datetime": "2025-07-05T07:23:08.543Z",
+    "name": "NOIMAGE南無阿部陀仏からあげ弁当",
+    "name_kana": "NOIMAGE南無阿部陀仏からあげ弁当",
+    "name_romaji": "NOIMAGE南無阿部陀仏からあげ弁当",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 38,
+  "fields": {
+    "created_datetime": "2025-07-05T07:23:08.547Z",
+    "updated_datetime": "2025-07-05T07:23:08.547Z",
+    "name": "“UlulU Live Tour ”",
+    "name_kana": "“UlulU Live Tour ”",
+    "name_romaji": "“UlulU Live Tour ”",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 39,
+  "fields": {
+    "created_datetime": "2025-07-05T07:23:08.553Z",
+    "updated_datetime": "2025-07-05T07:23:08.553Z",
+    "name": "ちゃんゆ胃 東愛阪ツアー 「胃住計画」",
+    "name_kana": "ちゃんゆ胃 東愛阪ツアー 「胃住計画」",
+    "name_romaji": "ちゃんゆ胃 東愛阪ツアー 「胃住計画」",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 40,
+  "fields": {
+    "created_datetime": "2025-07-05T07:23:08.556Z",
+    "updated_datetime": "2025-07-05T07:23:08.556Z",
+    "name": "『POP BEAT JEWELRY BOX』",
+    "name_kana": "『POP BEAT JEWELRY BOX』",
+    "name_romaji": "『POP BEAT JEWELRY BOX』",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 41,
+  "fields": {
+    "created_datetime": "2025-07-05T07:23:08.557Z",
+    "updated_datetime": "2025-07-05T07:23:08.557Z",
+    "name": "ヨルノピクニックstay crows香野子...",
+    "name_kana": "ヨルノピクニックstay crows香野子...",
+    "name_romaji": "ヨルノピクニックstay crows香野子...",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 42,
+  "fields": {
+    "created_datetime": "2025-07-05T07:23:08.559Z",
+    "updated_datetime": "2025-07-05T07:23:08.559Z",
+    "name": "Aurora supported by 脱却",
+    "name_kana": "Aurora supported by 脱却",
+    "name_romaji": "Aurora supported by 脱却",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 43,
+  "fields": {
+    "created_datetime": "2025-07-05T07:23:08.559Z",
+    "updated_datetime": "2025-07-05T07:23:08.559Z",
+    "name": "月刊PAMFinallymay in film...",
+    "name_kana": "月刊PAMFinallymay in film...",
+    "name_romaji": "月刊PAMFinallymay in film...",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 44,
+  "fields": {
+    "created_datetime": "2025-07-05T07:23:08.562Z",
+    "updated_datetime": "2025-07-05T07:23:08.562Z",
+    "name": "SHELTER presents. AFTER HOURS",
+    "name_kana": "SHELTER presents. AFTER HOURS",
+    "name_romaji": "SHELTER presents. AFTER HOURS",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 45,
+  "fields": {
+    "created_datetime": "2025-07-05T07:23:08.563Z",
+    "updated_datetime": "2025-07-05T07:23:08.563Z",
+    "name": "Trooper SaluteTHE DO DO DO’steiichi",
+    "name_kana": "Trooper SaluteTHE DO DO DO’steiichi",
+    "name_romaji": "Trooper SaluteTHE DO DO DO’steiichi",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+},
+{
+  "model": "performers.performer",
+  "pk": 46,
+  "fields": {
+    "created_datetime": "2025-07-05T07:23:08.564Z",
+    "updated_datetime": "2025-07-05T07:23:08.564Z",
+    "name": "VIEW MORE",
+    "name_kana": "VIEW MORE",
+    "name_romaji": "VIEW MORE",
+    "phone_number": "",
+    "email": null,
+    "website": null
+  }
+}
+]

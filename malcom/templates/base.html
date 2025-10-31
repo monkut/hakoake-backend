@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}東京ライブハウス{% endblock %}</title>
+    <link rel="alternate" type="application/rss+xml" title="Latest Performance Schedules" href="{% url 'houses:latest_rss' %}">
+    <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Permanent+Marker&family=Rock+Salt&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* Dirty Punk Theme */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Rock Salt', cursive;
+            background: linear-gradient(45deg, #1a1a1a, #2d2d2d);
+            background-attachment: fixed;
+            color: #f0f0f0;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 20%, rgba(255,0,100,0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(0,255,255,0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 60%, rgba(255,255,0,0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header */
+        header {
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 3px solid #ff0066;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 4px 20px rgba(255,0,102,0.3);
+        }
+
+        h1 {
+            font-family: 'Creepster', cursive;
+            font-size: 2.5em;
+            text-align: center;
+            padding: 20px 0;
+            background: linear-gradient(45deg, #ff0066, #00ffff, #ffff00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            animation: glitch 3s infinite;
+        }
+
+        @keyframes glitch {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-2px); }
+            40% { transform: translateX(2px); }
+            60% { transform: translateX(-1px); }
+            80% { transform: translateX(1px); }
+        }
+
+        /* Navigation */
+        nav {
+            background: rgba(255,0,102,0.1);
+            padding: 15px 0;
+            border-top: 1px solid rgba(255,0,102,0.3);
+        }
+
+        .nav-links {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .nav-links a {
+            color: #00ffff;
+            text-decoration: none;
+            font-size: 1.1em;
+            padding: 10px 20px;
+            border: 2px solid transparent;
+            border-radius: 20px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-links a::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .nav-links a:hover::before {
+            left: 100%;
+        }
+
+        .nav-links a:hover {
+            border-color: #ff0066;
+            transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(255,0,102,0.5);
+        }
+
+        /* Main Content */
+        main {
+            padding: 40px 0;
+            min-height: 70vh;
+        }
+
+        .content-section {
+            background: rgba(0,0,0,0.6);
+            margin: 30px 0;
+            padding: 30px;
+            border-radius: 15px;
+            border: 2px solid rgba(255,0,102,0.3);
+            backdrop-filter: blur(5px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .content-section::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: 
+                conic-gradient(from 0deg, 
+                    transparent 0deg, 
+                    rgba(255,0,102,0.1) 45deg, 
+                    transparent 90deg, 
+                    rgba(0,255,255,0.1) 135deg, 
+                    transparent 180deg, 
+                    rgba(255,255,0,0.1) 225deg, 
+                    transparent 270deg, 
+                    rgba(255,0,102,0.1) 315deg, 
+                    transparent 360deg);
+            animation: spin 20s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .content-section > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Typography */
+        h2 {
+            font-family: 'Permanent Marker', cursive;
+            font-size: 2em;
+            margin-bottom: 20px;
+            color: #ff0066;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }
+
+        h3 {
+            font-family: 'Permanent Marker', cursive;
+            font-size: 1.5em;
+            margin-bottom: 15px;
+            color: #00ffff;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-block;
+            padding: 12px 25px;
+            background: linear-gradient(45deg, #ff0066, #ff3399);
+            color: white;
+            text-decoration: none;
+            border-radius: 25px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            font-size: 1em;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255,0,102,0.4);
+        }
+
+        /* Social Media Icons */
+        .social-links {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .social-link {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 40px;
+            color: white;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-size: 1.2em;
+        }
+
+        .social-link.twitter { background: #1DA1F2; }
+        .social-link.instagram { background: linear-gradient(45deg, #E4405F, #FD1D1D, #FCB045); }
+        .social-link.youtube { background: #FF0000; }
+        .social-link.facebook { background: #1877F2; }
+        .social-link.bandcamp { background: #629AA0; }
+        .social-link.soundcloud { background: #FF3300; }
+        .social-link.spotify { background: #1DB954; }
+        .social-link.apple_music { background: #FA243C; }
+
+        .social-link:hover {
+            transform: scale(1.2) rotate(360deg);
+            box-shadow: 0 0 20px rgba(255,255,255,0.5);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2em;
+            }
+            
+            .nav-links {
+                gap: 15px;
+            }
+            
+            .nav-links a {
+                font-size: 1em;
+                padding: 8px 15px;
+            }
+            
+            .content-section {
+                padding: 20px;
+                margin: 20px 0;
+            }
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 12px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1a1a1a;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(45deg, #ff0066, #00ffff);
+            border-radius: 6px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(45deg, #ff3399, #33ffff);
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>{% block header_title %}🎸 東京ライブハウス 🎸{% endblock %}</h1>
+            <nav>
+                <div class="nav-links">
+                    <a href="{% url 'houses:schedule_current' %}">📅 今月のライブ</a>
+                    <a href="{% url 'houses:schedule_current' %}">🎵 スケジュール</a>
+                    <a href="#venues">🏠 会場一覧</a>
+                    <a href="#artists">🎤 アーティスト</a>
+                    <a href="{% url 'houses:latest_rss' %}">📡 RSS Feed</a>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <div class="container">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <footer style="background: rgba(0,0,0,0.8); padding: 20px 0; text-align: center; border-top: 2px solid #ff0066;">
+        <div class="container">
+            <p>&copy; 2025 東京ライブハウス - Built with 🎸 and 🤘</p>
+        </div>
+    </footer>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

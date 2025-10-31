@@ -1,0 +1,36 @@
+[
+  {
+    "model": "houses.livehouse",
+    "pk": 1,
+    "fields": {
+      "website": 1,
+      "name": "Shimokitazawa SHELTER",
+      "name_kana": "シモキタザワ シェルター",
+      "name_romaji": "Shimokitazawa SHELTER",
+      "phone_number": "03-3466-7430",
+      "address": "東京都世田谷区北沢2-6-10 仙田ビルB1",
+      "capacity": 250,
+      "opened_date": "1991-10-01",
+      "closed_date": null,
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "houses.livehouse",
+    "pk": 2,
+    "fields": {
+      "website": 2,
+      "name": "Shibuya La.mama",
+      "name_kana": "シブヤ ラママ",
+      "name_romaji": "Shibuya La.mama",
+      "phone_number": "03-3464-0801",
+      "address": "東京都渋谷区道玄坂1-15-3",
+      "capacity": 300,
+      "opened_date": "1982-01-01",
+      "closed_date": null,
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    }
+  }
+]

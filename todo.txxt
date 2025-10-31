@@ -1,0 +1,5 @@
+1. For the next month, create an html page using modern styles and a dirty punk theme displaying performances in a list of dates for all registered PerformanceSchedule for that month.
+   - use distill for page creation/display.
+2. Performers should be linked to their home pages and list performersociallinks using the same dirty punk theme, and standard social media icons.
+3. The current page should allow link to previous pages if they exist.
+    - Previous page should be linked to the previous month. (best to make the page once, with current, redirected to the current month page)

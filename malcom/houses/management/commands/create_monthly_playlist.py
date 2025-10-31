@@ -1,0 +1,385 @@
+"""
+Creates a MonthlyPlaylist for a given target_month.
+
+This command:
+1. Selects the top 5 Performers performing in the target_date month, ordered by playlist_weight (highest first)
+    - exclude performers without a PerformerSong with valid `youtube_video_id` and `youtube_url`
+2. For each performer, selects their most popular song (by youtube_view_count)
+3. Creates a YouTube playlist with these songs
+4. Creates MonthlyPlaylist and MonthlyPlaylistEntry records
+5. Updates playlist_weight:
+   - Selected performers (top 5): reset to 0
+   - Non-selected performers: increment by 1
+"""
+
+import datetime
+import logging
+import pickle
+from pathlib import Path
+
+import google_auth_oauthlib.flow
+import googleapiclient.discovery
+import googleapiclient.errors
+from django.conf import settings
+from django.core.management import BaseCommand, CommandParser
+from django.db import transaction
+from django.db.models import F
+from django.utils import timezone
+from google.auth.transport.requests import Request
+from houses.models import MonthlyPlaylist, MonthlyPlaylistEntry
+from performers.models import Performer, PerformerSong
+
+logger = logging.getLogger(__name__)
+
+SCOPES = ["https://www.googleapis.com/auth/youtube.force-ssl"]
+
+# Constants
+TOP_PERFORMERS_COUNT = 5  # noqa: N806
+YYYY_MM_LENGTH = 7  # noqa: N806
+YYYY_MM_DD_LENGTH = 10  # noqa: N806
+
+
+def date_str(v: str) -> datetime.date:
+    """Parse date string from 'YYYY-MM' or 'YYYY-MM-DD' format."""
+    v = v.strip()
+    if len(v) == YYYY_MM_LENGTH:  # YYYY-MM
+        return datetime.datetime.strptime(v, "%Y-%m").date()  # noqa: DTZ007
+    if len(v) == YYYY_MM_DD_LENGTH:  # YYYY-MM-DD
+        return datetime.datetime.strptime(v, "%Y-%m-%d").date()  # noqa: DTZ007
+    raise ValueError(f"Invalid date format: {v}. Expected 'YYYY-MM' or 'YYYY-MM-DD'")  # noqa: B904
+
+
+def get_authorized_youtube_client(client_secrets_file: Path):
+    """Get an authorized YouTube API client."""
+    api_service_name = "youtube"
+    api_version = "v3"
+
+    # Define token cache file path (same directory as secrets file)
+    token_cache_file = client_secrets_file.parent / "token.pickle"
+
+    credentials = None
+
+    # Load existing credentials from cache if available
+    if token_cache_file.exists():
+        logger.info(f"Loading cached credentials from {token_cache_file}")
+        try:
+            credentials = pickle.loads(token_cache_file.read_bytes())  # noqa: S301
+        except Exception as e:  # noqa: BLE001
+            logger.warning(f"Failed to load cached credentials: {e}")
+            credentials = None
+
+    # Check if credentials are valid or need refresh
+    if not credentials or not credentials.valid and credentials and credentials.refresh_token:
+        logger.info("Refreshing expired credentials")
+        try:
+            credentials.refresh(Request())
+            logger.info("Successfully refreshed credentials")
+        except Exception as e:  # noqa: BLE001
+            logger.warning(f"Failed to refresh credentials: {e}")
+            credentials = None
+
+        # If we still don't have valid credentials, run OAuth flow
+        if not credentials:
+            logger.info("Running OAuth flow for new credentials")
+            flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(str(client_secrets_file), SCOPES)
+            credentials = flow.run_local_server(port=0)
+            logger.info("Successfully obtained new credentials")
+
+        # Save credentials to cache
+        logger.info(f"Saving credentials to cache: {token_cache_file}")
+        try:
+            token_cache_file.write_bytes(pickle.dumps(credentials))
+            logger.info("Successfully saved credentials to cache")
+        except Exception as e:  # noqa: BLE001
+            logger.warning(f"Failed to save credentials to cache: {e}")
+    else:
+        logger.info("Using cached valid credentials")
+
+    # Build and return YouTube API client
+    youtube = googleapiclient.discovery.build(api_service_name, api_version, credentials=credentials)
+    return youtube
+
+
+def create_youtube_playlist(title: str, description: str, client_secrets_file: Path) -> str:  # noqa: C901, PLR0912, PLR0915, PLR0911
+    """Create a new public YouTube playlist and return its ID."""
+    youtube = get_authorized_youtube_client(client_secrets_file)
+
+    request = youtube.playlists().insert(
+        part="snippet,status",
+        body={
+            "snippet": {
+                "title": title,
+                "description": description,
+            },
+            "status": {"privacyStatus": "public"},
+        },
+    )
+
+    response = request.execute()
+    playlist_id = response["id"]
+    logger.info(f"Created YouTube playlist: {title} (ID: {playlist_id})")
+    return playlist_id
+
+
+def add_video_to_playlist(playlist_id: str, video_id: str, client_secrets_file: Path) -> bool:
+    """Add a video to a YouTube playlist."""
+    youtube = get_authorized_youtube_client(client_secrets_file)
+
+    try:
+        request = youtube.playlistItems().insert(
+            part="snippet",
+            body={
+                "snippet": {
+                    "playlistId": playlist_id,
+                    "resourceId": {
+                        "kind": "youtube#video",
+                        "videoId": video_id,
+                    },
+                },
+            },
+        )
+        request.execute()
+    except googleapiclient.errors.HttpError:
+        logger.exception(f"Failed to add video {video_id} to playlist")
+        return False
+    else:
+        logger.info(f"Added video {video_id} to playlist {playlist_id}")
+        return True
+
+
+class Command(BaseCommand):
+    help = "Create a monthly playlist for the top 5 performers by playlist_weight"
+
+    def add_arguments(self, parser: CommandParser) -> None:
+        parser.add_argument(
+            "target_month",
+            type=str,
+            help="Target month in YYYY-MM or YYYY-MM-DD format",
+        )
+        parser.add_argument(
+            "--secrets-file",
+            type=str,
+            default="secrets.json",
+            help="Path to Google OAuth secrets file (default: secrets.json)",
+        )
+        parser.add_argument(
+            "--dry-run",
+            action="store_true",
+            help="Perform a dry run without creating playlist or updating weights",
+        )
+
+    def handle(self, *args, **options):  # noqa: ANN002, ANN003, C901, PLR0911, PLR0912, PLR0915
+        target_month_str = options["target_month"]
+        secrets_file = Path(options["secrets_file"])
+        dry_run = options["dry_run"]
+
+        # Parse target month
+        try:
+            target_date = date_str(target_month_str)
+        except ValueError as e:
+            self.stderr.write(self.style.ERROR(str(e)))
+            return
+
+        # Set target_date to first day of month
+        target_date = target_date.replace(day=1)
+
+        self.stdout.write(f"Creating monthly playlist for {target_date.strftime('%Y-%m')}")
+
+        # Check if playlist already exists for this month
+        if MonthlyPlaylist.objects.filter(date=target_date).exists():
+            self.stderr.write(self.style.ERROR(f"MonthlyPlaylist already exists for {target_date.strftime('%Y-%m')}"))
+            return
+
+        # Check if secrets file exists
+        if not secrets_file.exists():
+            self.stderr.write(self.style.ERROR(f"Secrets file not found: {secrets_file}"))
+            self.stdout.write("Please provide a valid Google OAuth secrets file using --secrets-file")
+            return
+
+        # Calculate month boundaries for filtering performances
+        month_start = target_date
+        if target_date.month == 12:  # noqa: PLR2004
+            month_end = target_date.replace(year=target_date.year + 1, month=1, day=1)
+        else:
+            month_end = target_date.replace(month=target_date.month + 1, day=1)
+
+        # Get IDs of performers who have at least one valid YouTube song
+        performers_with_songs = (
+            PerformerSong.objects.filter(
+                youtube_video_id__isnull=False,
+            )
+            .exclude(youtube_video_id="")
+            .values_list("performer_id", flat=True)
+            .distinct()
+        )
+
+        # Get eligible performers ordered by playlist_weight who:
+        # 1. Have at least one YouTube song
+        # 2. Are scheduled to perform in the target month
+        eligible_performers = list(
+            Performer.objects.filter(
+                id__in=performers_with_songs,
+                performance_schedules__performance_date__gte=month_start,
+                performance_schedules__performance_date__lt=month_end,
+            )
+            .distinct()
+            .order_by("-playlist_weight", "name")
+        )
+
+        if not eligible_performers:
+            self.stderr.write(
+                self.style.ERROR(
+                    f"No performers with YouTube songs scheduled for {target_date.strftime('%Y-%m')} found"
+                )
+            )
+            return
+
+        # Select performers with unique songs (deduplicate by video_id)
+        selected_songs = []
+        used_video_ids = set()
+
+        for performer in eligible_performers:
+            if len(selected_songs) >= TOP_PERFORMERS_COUNT:
+                break
+
+            # Get most popular song by youtube_view_count
+            most_popular_song = (
+                PerformerSong.objects.filter(
+                    performer=performer,
+                    youtube_video_id__isnull=False,
+                )
+                .exclude(youtube_video_id="")
+                .order_by("-youtube_view_count", "title")
+                .first()
+            )
+
+            if most_popular_song and most_popular_song.youtube_video_id not in used_video_ids:
+                selected_songs.append((performer, most_popular_song))
+                used_video_ids.add(most_popular_song.youtube_video_id)
+                self.stdout.write(
+                    f"  {performer.name}: {most_popular_song.title} "
+                    f"(views: {most_popular_song.youtube_view_count or 0}, weight: {performer.playlist_weight})",
+                )
+            elif most_popular_song:
+                self.stdout.write(
+                    self.style.WARNING(
+                        f"  Skipping {performer.name}: duplicate video {most_popular_song.youtube_video_id}"
+                    )
+                )
+
+        if not selected_songs:
+            self.stderr.write(self.style.ERROR("No songs with YouTube videos found for eligible performers"))
+            return
+
+        if len(selected_songs) < TOP_PERFORMERS_COUNT:
+            self.stdout.write(
+                self.style.WARNING(
+                    f"Only {len(selected_songs)} unique performers/songs found (expected {TOP_PERFORMERS_COUNT})"
+                ),
+            )
+
+        if dry_run:
+            self.stdout.write(self.style.SUCCESS("\n=== DRY RUN - No changes made ==="))
+            self.stdout.write(f"Would create playlist with {len(selected_songs)} songs")
+            selected_performer_ids = [p.id for p, _ in selected_songs]
+            self.stdout.write(f"Would reset playlist_weight to 0 for {len(selected_performer_ids)} performers")
+            non_selected_count = Performer.objects.exclude(id__in=selected_performer_ids).count()
+            self.stdout.write(f"Would increment playlist_weight for {non_selected_count} non-selected performers")
+            return
+
+        # Create YouTube playlist
+        playlist_title = f"HAKKO-AKKEI {target_date.strftime('%B')} [TOKYO] ({target_date.strftime('%Y')})"
+
+        # Build description with performance details for each performer
+        description_lines = [f"Monthly playlist featuring top performers for {target_date.strftime('%B %Y')}."]
+        description_lines.append("")  # Empty line
+
+        for performer, song in selected_songs:  # noqa: B007
+            # Get the performer's performances in the target month
+            performances = (
+                performer.performance_schedules.filter(
+                    performance_date__gte=month_start,
+                    performance_date__lt=month_end,
+                )
+                .select_related("live_house", "live_house__website")
+                .order_by("performance_date")
+            )
+
+            # Add each performance to the description
+            for perf in performances:
+                day_of_week = perf.performance_date.strftime("%a").upper()
+                performance_date = perf.performance_date.strftime("%Y-%m-%d")
+                venue_name = perf.live_house.name
+                venue_url = perf.live_house.website.url
+                description_lines.append(
+                    f"{performer.name} {performance_date} ({day_of_week}) @{venue_name} - {venue_url}"
+                )
+
+        playlist_description = "\n".join(description_lines)
+
+        try:
+            youtube_playlist_id = create_youtube_playlist(playlist_title, playlist_description, secrets_file)
+        except Exception as e:  # noqa: BLE001
+            self.stderr.write(self.style.ERROR(f"Failed to create YouTube playlist: {e}"))
+            return
+
+        # Add songs to YouTube playlist (deduplicate by video_id)
+        added_songs = []
+        added_video_ids = set()
+        for performer, song in selected_songs:
+            # Skip if this video has already been added
+            if song.youtube_video_id in added_video_ids:
+                self.stdout.write(self.style.WARNING(f"  Skipping {performer.name} - duplicate video: {song.title}"))
+                continue
+
+            success = add_video_to_playlist(youtube_playlist_id, song.youtube_video_id, secrets_file)
+            if success:
+                added_songs.append((performer, song))
+                added_video_ids.add(song.youtube_video_id)
+
+        if not added_songs:
+            self.stderr.write(self.style.ERROR("Failed to add any songs to YouTube playlist"))
+            return
+
+        # Create database records and update playlist_weight
+        with transaction.atomic():
+            # Create MonthlyPlaylist
+            youtube_playlist_url = f"https://www.youtube.com/playlist?list={youtube_playlist_id}"
+            channel_url = getattr(settings, "YOUTUBE_CHANNEL_URL", "")
+
+            monthly_playlist = MonthlyPlaylist.objects.create(
+                date=target_date,
+                youtube_playlist_id=youtube_playlist_id,
+                youtube_playlist_url=youtube_playlist_url,
+                youtube_channel_url=channel_url,
+            )
+            self.stdout.write(f"\nCreated MonthlyPlaylist for {target_date.strftime('%Y-%m')}")
+
+            # Create MonthlyPlaylistEntry records
+            for position, (performer, song) in enumerate(added_songs, start=1):
+                MonthlyPlaylistEntry.objects.create(
+                    playlist=monthly_playlist,
+                    position=position,
+                    song=song,
+                )
+                self.stdout.write(f"  [{position}] {performer.name} - {song.title}")
+
+            # Update playlist_weight for selected performers (reset to 0)
+            selected_performer_ids = [p.id for p, _ in added_songs]
+            Performer.objects.filter(id__in=selected_performer_ids).update(
+                playlist_weight=0,
+                playlist_weight_update_datetime=timezone.now(),
+            )
+            self.stdout.write(f"\nReset playlist_weight to 0 for {len(selected_performer_ids)} selected performers")
+
+            # Update playlist_weight for non-selected performers (increment by 1)
+            non_selected_updated = Performer.objects.exclude(id__in=selected_performer_ids).update(
+                playlist_weight=F("playlist_weight") + 1,
+                playlist_weight_update_datetime=timezone.now(),
+            )
+            self.stdout.write(f"Incremented playlist_weight for {non_selected_updated} non-selected performers")
+
+        self.stdout.write(
+            self.style.SUCCESS(f"\n✓ Successfully created monthly playlist: {youtube_playlist_id}"),
+        )
+        self.stdout.write(f"  YouTube URL: https://www.youtube.com/playlist?list={youtube_playlist_id}")

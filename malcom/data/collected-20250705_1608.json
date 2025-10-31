@@ -1,0 +1,24 @@
+[
+{
+  "model": "houses.livehousewebsite",
+  "pk": 1,
+  "fields": {
+    "created_datetime": "2025-07-05T07:08:44.103Z",
+    "updated_datetime": "2025-07-05T07:08:49.907Z",
+    "url": "https://www.loft-prj.co.jp/schedule/shelter",
+    "state": "failed",
+    "crawler_class": "LoftProjectShelterCrawler"
+  }
+},
+{
+  "model": "houses.livehousewebsite",
+  "pk": 2,
+  "fields": {
+    "created_datetime": "2025-07-05T07:08:44.105Z",
+    "updated_datetime": "2025-07-05T07:08:51.699Z",
+    "url": "https://www.lamama.net/",
+    "state": "failed",
+    "crawler_class": "LaMamaCrawler"
+  }
+}
+]

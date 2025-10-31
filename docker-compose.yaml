@@ -1,0 +1,18 @@
+name: malcom
+
+services:
+
+  localstack:
+    image: localstack/localstack:4.3.0
+    container_name: "malcom-localstack-4.3.0"
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=s3,sqs
+
+  wait:
+    image: waisbrot/wait
+    depends_on:
+      - localstack
+    environment:
+      - TARGETS=localstack:4566

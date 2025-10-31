@@ -1,0 +1,16 @@
+{
+  "collection_timestamp": "20250705_1608",
+  "statistics": {
+    "live_houses": 0,
+    "performance_schedules": 0,
+    "performers": 0,
+    "websites": {
+      "total": 2,
+      "completed": 0,
+      "failed": 2,
+      "not_started": 0,
+      "in_progress": 0
+    }
+  },
+  "data_file": "collected-20250705_1608.json"
+}
