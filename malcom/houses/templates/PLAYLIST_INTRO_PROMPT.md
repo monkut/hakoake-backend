@@ -1,7 +1,7 @@
 # Task: Generate Monthly Playlist Introduction
 
 ## Context
-You are writing an introduction for HAKOAKE's November 2025 monthly playlist video. HAKOAKE is a music discovery platform focused on Tokyo's underground live music scene.
+You are writing an introduction for HAKOAKE's the given monthly playlist video. HAKOAKE is a music discovery platform focused on Tokyo's underground live music scene.
 
 ### Site Philosophy
 "Forget the stadiums. The best music is found in the smallest rooms.
@@ -22,7 +22,7 @@ You are to introduce *EACH* given artist, and the selected song, describing how 
 Describe the selection criteria:
 
 - **Selection Criteria**: Artists are chosen based on:
-  - Scheduled performances at partner venues in November
+  - Scheduled performances at partner venues for the given month
   - Playlist weight (rotation system to ensure fair representation)
   - Availability of YouTube video content
 
@@ -50,7 +50,7 @@ Describe the selection criteria:
 - Introduce the given artists as a cohesive collection
 - Hint at diversity without being too specific
 - Build excitement for what listeners will discover
-- Mention they're all performing in the given Month
+- Mention they're all performing in the given Month, and WHERE they are performing
 
 4. **Call to Action** (1-2 sentences)
 - Encourage watching the full video, mention your favorite in the comments section of this video.
@@ -67,10 +67,11 @@ Describe the selection criteria:
   - Clichés like "hidden gem" or "best kept secret"
   - Overly technical music terminology
   - Promises about specific sounds (viewers will hear for themselves)
+  - words: 'excited', 'exciting', 'grab', 'underground', 'vibrant'
 
 ### What Makes a Great Introduction
 
-- **Specificity**: Reference November, Tokyo, the intimate venue experience
+- **Specificity**: Reference given month, Tokyo, the intimate venue experience
 - **Energy**: Match the excitement of discovering new live music
 - **Authenticity**: Sound like a real music fan, not marketing copy
 - **Invitation**: Make viewers want to explore further
@@ -81,6 +82,7 @@ Describe the selection criteria:
 Provide the introduction as a single paragraph of flowing text, ready to be recorded as voice-over or presented as opening text in the video.
 
 ## Example Opening Lines (for inspiration only, do not copy)
+
 - "While most of Tokyo rushes past neon-lit towers, something different is happening in the basements and second floors..."
 - "This November, five bands are proving that the best nights in Tokyo happen in rooms small enough to feel the bass in your chest..."
 - "350 people. That's our limit. Because when the venue's small enough, music stops being a spectacle and becomes something you feel..."

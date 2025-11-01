@@ -22,8 +22,50 @@ Python: 3.13
 2. The following command installs project and development dependencies:
 
     ```bash
-    uv sync 
+    uv sync
     ```
+
+3. Install Playwright browsers (required for JavaScript-enabled web scraping):
+
+    ```bash
+    uv run playwright install
+    ```
+
+### Required AI Models Setup
+
+This project uses [Ollama](https://ollama.com/) for AI-powered features. Install Ollama first, then pull the required models:
+
+#### 1. Install Ollama
+
+Follow the installation instructions at [ollama.com](https://ollama.com/)
+
+#### 2. Pull Required Models
+
+**Text Generation Model** (for playlist introductions):
+```bash
+ollama pull mistral-small
+```
+
+**TTS Model** (for voice generation):
+```bash
+ollama pull legraphista/Orpheus:3b-ft-q4_k_m
+```
+
+#### Model Configuration
+
+Models are configured in `malcom/settings.py`:
+- `PLAYLIST_INTRO_TEXT_GENERATION_MODEL`: Text generation model (default: `mistral-small`)
+- `VIDEO_TTS_MODEL`: TTS model (default: `legraphista/Orpheus:3b-ft-q4_k_m`)
+- `VIDEO_TTS_VOICE`: Orpheus voice selection (options: tara, leah, jess, leo, dan, mia, zac, zoe, ceylia)
+
+#### Voice Generation
+
+The project uses two TTS systems:
+
+1. **Ollama Orpheus** (token generation): Requires the model above
+2. **Microsoft Edge TTS** (audio synthesis): No installation needed, uses edge-tts library
+
+Robotic voice effects are applied using pydub with configurable static levels.
 
 ### Add new packages
 

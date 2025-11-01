@@ -264,5 +264,15 @@ REQUIRED_BUCKETS = (AWS_S3_DATA_BUCKETNAME,)
 YOUTUBE_CHANNEL_URL = os.getenv("CHANNEL_URL", "")
 
 PLAYLIST_INTRO_TEXT_GENERATION_MODEL = "mistral-small"
-# For the most natural-sounding speech with emotional range: Orpheus-3b-FT
-VIDEO_TTS_MODEL = "Orpheus-3b-FT"  # noqa: N806
+
+# TTS Configuration for video generation
+VIDEO_TTS_MODEL = "legraphista/Orpheus:3b-ft-q4_k_m"  # noqa: N806
+VIDEO_TTS_VOICE = "tara"  # Orpheus voices: tara, leah, jess, leo, dan, mia, zac, zoe, ceylia
+VIDEO_TTS_TEMPERATURE = 0.7  # 0.3-1.5 range
+VIDEO_TTS_TOP_P = 0.8  # 0.6-1.0 range  # noqa: N806
+VIDEO_TTS_REPETITION_PENALTY = 1.15  # >= 1.1 required for stable generations
+
+# Fallback TTS (edge-tts) configuration
+EDGE_TTS_VOICE = "en-US-AriaNeural"  # Microsoft Edge TTS voice
+
+IMAGE_GENERATION_MODEL = "llava"
