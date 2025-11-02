@@ -73,7 +73,7 @@ class Command(BaseCommand):
         # Use default text if not provided
         if not text:
             text = (
-                "Welcome to HAKOAKE's monthly playlist, where we dive into the heart of Tokyo's live music scene. "
+                "Welcome to HAKKO-AKKEI's monthly playlist, where we dive into the heart of Tokyo's live music scene. "
                 "This month, we're thrilled to spotlight five incredible bands who are all performing in intimate "
                 "venues with a capacity of 350 or less. These artists are not just playing music; "
                 "they're creating experiences that you can feel in your chest."

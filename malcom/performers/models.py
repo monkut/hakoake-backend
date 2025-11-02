@@ -128,6 +128,17 @@ class Performer(TimestampedModel):
 
     def save(self, *args, **kwargs):  # noqa: ANN002, ANN003
         """Save the performer with validation."""
+        # Clean name fields - strip whitespace, trailing slashes/backslashes, and "BAND:" prefix
+        if self.name:
+            self.name = self.name.strip().rstrip("/\\")
+            self.name = re.sub(r"^BAND:\s*", "", self.name, flags=re.IGNORECASE)
+        if self.name_kana:
+            self.name_kana = self.name_kana.strip().rstrip("/\\")
+            self.name_kana = re.sub(r"^BAND:\s*", "", self.name_kana, flags=re.IGNORECASE)
+        if self.name_romaji:
+            self.name_romaji = self.name_romaji.strip().rstrip("/\\")
+            self.name_romaji = re.sub(r"^BAND:\s*", "", self.name_romaji, flags=re.IGNORECASE)
+
         # For new instances, we need to save first then validate social presence
         is_new = self.pk is None
         super().save(*args, **kwargs)
@@ -236,6 +247,13 @@ class PerformerSong(TimestampedModel):
     youtube_url = models.URLField(max_length=255, blank=True, default="")
     youtube_view_count = models.BigIntegerField(blank=True, null=True)  # noqa: DJ001
     youtube_duration_seconds = models.IntegerField(blank=True, null=True)  # noqa: DJ001
+
+    def save(self, *args, **kwargs):  # noqa: ANN002, ANN003
+        """Save the song with cleaned title."""
+        # Clean title - strip whitespace and trailing slashes/backslashes
+        if self.title:
+            self.title = self.title.strip().rstrip("/\\")
+        super().save(*args, **kwargs)
 
     def __str__(self) -> str:
         return f"{self.title} by {self.performer.name}"

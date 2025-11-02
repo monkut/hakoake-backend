@@ -314,27 +314,14 @@ def apply_robotic_effects_to_audio(audio_path: Path) -> None:
     # Load the audio
     audio = AudioSegment.from_mp3(str(audio_path))
 
-    # Apply static noise intermittently (2% of audio)
-    chunk_duration_ms = 200  # 200ms chunks
-    chunks = []
-    static_chunks_count = 0
-    static_probability = 0.02  # 2% of chunks get static
+    # Add static at the end of the audio (600ms)
+    static_duration_ms = 600
+    noise = WhiteNoise().to_audio_segment(duration=static_duration_ms)
+    static = noise + settings.EDGE_TTS_STATIC_LEVEL
 
-    rng = np.random.default_rng()
-
-    for chunk_start in range(0, len(audio), chunk_duration_ms):
-        chunk = audio[chunk_start : chunk_start + chunk_duration_ms]
-
-        # Random chance to add static to this chunk
-        if rng.random() < static_probability:
-            noise = WhiteNoise().to_audio_segment(duration=len(chunk))
-            chunk = chunk.overlay(noise + settings.EDGE_TTS_STATIC_LEVEL)
-            static_chunks_count += 1
-
-        chunks.append(chunk)
-
-    robotic_audio = sum(chunks) if chunks else audio
-    logger.info(f"Applied static to {static_chunks_count} chunks ({static_chunks_count * chunk_duration_ms}ms total)")
+    # Append static to the end
+    robotic_audio = audio + static
+    logger.info(f"Applied {static_duration_ms}ms static to end of audio")
 
     # Apply quality reduction for digital artifacts
     robotic_audio = robotic_audio.set_frame_rate(settings.EDGE_TTS_SAMPLE_RATE)
@@ -619,9 +606,22 @@ def generate_playlist_video(playlist: MonthlyPlaylist, intro_text: str | None = 
 
     # 1. Create intro slide
     logger.info("Creating intro slide...")
+
+    # Build performer list for intro slide
+    performer_list_items = []
+    for entry in playlist.monthlyplaylistentry_set.order_by("position"):
+        performer = entry.song.performer
+        performer_text = f"{performer.name} ({performer.name_romaji})"
+        if entry.is_spotlight:
+            performer_text += " *SPOTLIGHTED*"
+        performer_list_items.append(f"• {performer_text}")
+
+    performer_list = "\n".join(performer_list_items)
+
     intro_slide = create_slide(
-        title=f"HAKOAKE - {playlist.date.strftime('%B %Y')}",
+        title=f"HAKKO-AKKEI - {playlist.date.strftime('%B %Y')}",
         subtitle="Tokyo Live House Music Scene",
+        description=performer_list,
     )
     intro_path = temp_dir / "slide_intro.png"
     intro_slide.save(intro_path)
@@ -696,10 +696,10 @@ def generate_playlist_video(playlist: MonthlyPlaylist, intro_text: str | None = 
     logger.info("Creating closing slide...")
     closing_slide = create_slide(
         title="See You Next Month!",
-        subtitle="Follow @HAKOAKE for more Live House music",
+        subtitle="Follow @hakkoakkei for more Live House music",
         description="Background Music: Get in the Groove – Psychedelic Grunge Instrumental - nickpanek",
         qr_urls=["https://www.youtube.com/@hakkoakkei"],
-        qr_labels=["HAKOAKE YouTube"],
+        qr_labels=["HAKKO-AKKEI YouTube"],
     )
     closing_path = temp_dir / "slide_closing.png"
     closing_slide.save(closing_path)
@@ -709,8 +709,8 @@ def generate_playlist_video(playlist: MonthlyPlaylist, intro_text: str | None = 
     expected_sections = 1 + playlist.monthlyplaylistentry_set.count() + 1  # intro + performers + closing
     sections = parse_introduction_sections(result_introduction, expected_sections)
 
-    # Generate TTS using Orpheus model
-    logger.info(f"Generating TTS with Orpheus model: {settings.VIDEO_TTS_MODEL}")
+    # Generate TTS using model
+    logger.info(f"Generating TTS with model: {settings.VIDEO_TTS_MODEL}")
     tokens_path = temp_dir / "orpheus_tokens.txt"
 
     # Generate TTS audio per section if sections were successfully parsed
@@ -880,9 +880,9 @@ def generate_playlist_video(playlist: MonthlyPlaylist, intro_text: str | None = 
             # Trim to exact video duration
             background_music = background_music.subclipped(0, final_video.duration)
 
-            # Reduce volume to 2% of original (so speech is more prominent)
+            # Reduce volume to 9% of original (so speech is more prominent)
             # MoviePy 2.x: use with_volume_scaled()
-            background_music = background_music.with_volume_scaled(0.02)
+            background_music = background_music.with_volume_scaled(0.09)
 
             # Add fade-out effect (last 3 seconds)
             fade_duration = 3.0  # seconds

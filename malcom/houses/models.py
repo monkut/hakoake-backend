@@ -54,6 +54,13 @@ class PerformanceSchedule(models.Model):
     def __str__(self) -> str:
         return f"{self.live_house.name} - {self.performance_date} {self.start_time}"
 
+    def save(self, *args, **kwargs):  # noqa: ANN002, ANN003
+        """Save the performance schedule with cleaned performance name."""
+        # Clean performance_name - strip whitespace and trailing slashes/backslashes
+        if self.performance_name:
+            self.performance_name = self.performance_name.strip().rstrip("/\\")
+        super().save(*args, **kwargs)
+
     class Meta:  # noqa: DJ012
         verbose_name = "Performance Schedule"
         verbose_name_plural = "Performance Schedules"

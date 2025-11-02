@@ -274,7 +274,7 @@ VIDEO_TTS_REPETITION_PENALTY = 1.15  # >= 1.1 required for stable generations
 
 # Fallback TTS (edge-tts) configuration
 EDGE_TTS_VOICE = "en-US-GuyNeural"  # Microsoft Edge TTS voice (robotic_deep_slow preset)
-EDGE_TTS_RATE = "-20%"  # Speech rate modification
+EDGE_TTS_RATE = "-18%"  # Speech rate modification
 EDGE_TTS_PITCH = "-20Hz"  # Pitch modification
 EDGE_TTS_STATIC_LEVEL = -15  # Static noise level in dB
 EDGE_TTS_BITRATE = "64k"  # Audio bitrate for compression artifacts

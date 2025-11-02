@@ -214,6 +214,9 @@ class AntiknockCrawler(LiveHouseWebsiteCrawler):
                     cleaned_name = cleaned_part.strip()
                     cleaned_name = re.sub(r"\s+", " ", cleaned_name)
 
+                    # Remove "BAND:" prefix if present
+                    cleaned_name = re.sub(r"^BAND:\s*", "", cleaned_name, flags=re.IGNORECASE)
+
                     max_performer_name_length = 50
                     min_performer_name_length = 2
                     if (
@@ -238,6 +241,9 @@ class AntiknockCrawler(LiveHouseWebsiteCrawler):
             # Do minimal cleaning instead of using base class _clean_performer_name
             cleaned_name = performer_text.strip()
             cleaned_name = re.sub(r"\s+", " ", cleaned_name)
+
+            # Remove "BAND:" prefix if present
+            cleaned_name = re.sub(r"^BAND:\s*", "", cleaned_name, flags=re.IGNORECASE)
 
             max_performer_name_length = 50
             min_performer_name_length = 2
@@ -297,6 +303,9 @@ class AntiknockCrawler(LiveHouseWebsiteCrawler):
 
             # Remove excessive whitespace
             cleaned_name = re.sub(r"\s+", " ", cleaned_name)
+
+            # Remove "BAND:" prefix if present
+            cleaned_name = re.sub(r"^BAND:\s*", "", cleaned_name, flags=re.IGNORECASE)
 
             # Validate and add
             max_performer_name_length = 50

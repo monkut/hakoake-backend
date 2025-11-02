@@ -16,8 +16,8 @@ Jump in and get a taste of Tokyo's music scene, we spotlight lesser known bands 
 
 ## Playlist Information
 
-The 'user' will provide a list of bands and band info for a given month.
-You are to introduce *EACH* given artist, and the selected song, describing how many times they've been featured in a playlist.
+The 'user' will provide a list of bands and band info for a given month, including their playlist appearance count.
+You are to introduce *EACH* given artist and their selected song. If this is their first playlist appearance, you may mention it, but VARY your language - never repeat the same phrase like "don't miss out" across multiple performers.
 
 Describe the selection criteria:
 
@@ -57,7 +57,7 @@ Describe the selection criteria:
 - Mention the QR codes for more details
 - Invite viewers to catch these artists live
 - Mention to KEEP listening to this playlist to hear song samples from the selected artists.
-- Include the channel link: https://www.youtube.com/@hakkoakkei
+- Include the channel link: @hakkoakkei
 
 ### Constraints
 
@@ -73,7 +73,8 @@ Describe the selection criteria:
   - Clichés like "hidden gem" or "best kept secret"
   - Overly technical music terminology
   - Promises about specific sounds (viewers will hear for themselves)
-  - words: 'excited', 'exciting', 'grab', 'underground', 'vibrant', ''
+  - Repetitive phrases across performer sections (e.g., repeating "don't miss out", "first time", etc.)
+  - Words: 'excited', 'exciting', 'grab', 'underground', 'vibrant'
 
 ### What Makes a Great Introduction
 
