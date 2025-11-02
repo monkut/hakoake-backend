@@ -13,12 +13,12 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='performersong',
             name='youtube_duration_seconds',
-            field=models.IntegerField(blank=True, null=True)  # noqa: DJ001,
+            field=models.IntegerField(blank=True, null=True),  # noqa: DJ001
         ),
         migrations.AddField(
             model_name='performersong',
             name='youtube_url',
-            field=models.URLField(blank=True, max_length=255, null=True)  # noqa: DJ001,
+            field=models.URLField(blank=True, max_length=255, null=True),  # noqa: DJ001
         ),
         migrations.AddField(
             model_name='performersong',
@@ -28,6 +28,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='performersong',
             name='youtube_view_count',
-            field=models.BigIntegerField(blank=True, null=True)  # noqa: DJ001,
+            field=models.BigIntegerField(blank=True, null=True),  # noqa: DJ001
         ),
     ]

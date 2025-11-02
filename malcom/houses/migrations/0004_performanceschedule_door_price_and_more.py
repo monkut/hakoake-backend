@@ -13,11 +13,11 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='performanceschedule',
             name='door_price',
-            field=models.DecimalField(blank=True, decimal_places=2, max_digits=10, null=True)  # noqa: DJ001,
+            field=models.DecimalField(blank=True, decimal_places=2, max_digits=10, null=True),  # noqa: DJ001
         ),
         migrations.AddField(
             model_name='performanceschedule',
             name='presale_price',
-            field=models.DecimalField(blank=True, decimal_places=2, max_digits=10, null=True)  # noqa: DJ001,
+            field=models.DecimalField(blank=True, decimal_places=2, max_digits=10, null=True),  # noqa: DJ001
         ),
     ]

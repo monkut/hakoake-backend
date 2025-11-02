@@ -16,8 +16,8 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('title', models.CharField(max_length=255)),
-                ('release_date', models.DateField(blank=True, null=True)  # noqa: DJ001),
-                ('duration', models.DurationField(blank=True, null=True)  # noqa: DJ001),
+                ('release_date', models.DateField(blank=True, null=True)),  # noqa: DJ001
+                ('duration', models.DurationField(blank=True, null=True)),  # noqa: DJ001
                 ('genre', models.CharField(blank=True, default='', max_length=100)),
                 ('performer', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='songs', to='performers.performer')),  # noqa: E501
             ],

@@ -53,7 +53,7 @@ class Migration(migrations.Migration):
                 ('updated_datetime', models.DateTimeField(auto_now=True)),
                 ('platform', models.CharField(max_length=50)),
                 ('platform_id', models.CharField(blank=True, default='', max_length=255)),
-                ('url', models.URLField(blank=True, max_length=255, null=True)  # noqa: DJ001),
+                ('url', models.URLField(blank=True, max_length=255, null=True)),  # noqa: DJ001
                 ('performer', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='social_links', to='performers.performer')),  # noqa: E501
             ],
             options={

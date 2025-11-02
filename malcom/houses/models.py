@@ -117,13 +117,16 @@ class MonthlyPlaylistEntry(TimestampedModel):
     playlist = models.ForeignKey(MonthlyPlaylist, on_delete=models.CASCADE)
     position = models.PositiveIntegerField(default=1)
     song = models.ForeignKey("performers.PerformerSong", on_delete=models.CASCADE)
+    is_spotlight = models.BooleanField(default=False)
 
     class Meta:
         unique_together = ("playlist", "position")
 
     def save(self, *args, **kwargs):  # noqa: ANN002, ANN003
-        # get latest position
-        latest_entry = MonthlyPlaylistEntry.objects.filter(playlist=self.playlist).order_by("-position").first()
-        if latest_entry:
-            self.position = latest_entry.position + 1
+        # Only auto-increment position for new entries without an explicit position
+        if not self.pk and self.position == 1:  # position defaults to 1, so only auto-increment if it's still default
+            # get latest position
+            latest_entry = MonthlyPlaylistEntry.objects.filter(playlist=self.playlist).order_by("-position").first()
+            if latest_entry:
+                self.position = latest_entry.position + 1
         super().save(*args, **kwargs)

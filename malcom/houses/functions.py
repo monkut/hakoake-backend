@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import re
 import tempfile
 from datetime import datetime
 from pathlib import Path
@@ -13,7 +14,8 @@ from django.conf import settings
 from django.core import management
 from django.db.models import Count
 from django.utils import timezone
-from moviepy import AudioArrayClip, AudioFileClip, ImageClip, concatenate_audioclips, concatenate_videoclips
+from moviepy import AudioFileClip, CompositeAudioClip, ImageClip, concatenate_audioclips, concatenate_videoclips
+from moviepy.audio import fx as afx
 from performers.models import Performer, PerformerSocialLink
 from PIL import Image, ImageDraw, ImageFont
 from pydub import AudioSegment
@@ -269,8 +271,79 @@ def create_collection_summary(data_filepath: Path, timestamp: str) -> None:  # n
     )
 
 
+def parse_introduction_sections(introduction_text: str, expected_sections: int) -> list[dict[str, str]]:
+    """
+    Parse the introduction text into sections for each slide.
+
+    Args:
+        introduction_text: The full introduction text with section headers
+        expected_sections: Total number of sections expected (intro + performers + closing)
+
+    Returns:
+        List of dicts with 'type' and 'text' keys for each section
+    """
+    sections = []
+
+    # Split by section headers (# INTRO, # PERFORMER N:, # CLOSING)
+    pattern = r"#\s+(INTRO|PERFORMER\s+\d+:.*?|CLOSING)\s*\n(.*?)(?=\n#\s+|$)"
+    matches = re.findall(pattern, introduction_text, re.DOTALL | re.MULTILINE)
+
+    for header, section_text in matches:
+        section_text = section_text.strip()  # noqa: PLW2901
+        if section_text:
+            if header == "INTRO":
+                sections.append({"type": "intro", "text": section_text})
+            elif header == "CLOSING":
+                sections.append({"type": "closing", "text": section_text})
+            elif header.startswith("PERFORMER"):
+                sections.append({"type": "performer", "text": section_text})
+
+    # Validate section count
+    if len(sections) != expected_sections:
+        logger.warning(
+            f"Section count mismatch: expected {expected_sections}, got {len(sections)}. "
+            f"Will fall back to equal-duration slides."
+        )
+        return []
+
+    return sections
+
+
+def apply_robotic_effects_to_audio(audio_path: Path) -> None:
+    """Apply robotic effects (static noise and quality reduction) to an audio file."""
+    # Load the audio
+    audio = AudioSegment.from_mp3(str(audio_path))
+
+    # Apply static noise intermittently (2% of audio)
+    chunk_duration_ms = 200  # 200ms chunks
+    chunks = []
+    static_chunks_count = 0
+    static_probability = 0.02  # 2% of chunks get static
+
+    rng = np.random.default_rng()
+
+    for chunk_start in range(0, len(audio), chunk_duration_ms):
+        chunk = audio[chunk_start : chunk_start + chunk_duration_ms]
+
+        # Random chance to add static to this chunk
+        if rng.random() < static_probability:
+            noise = WhiteNoise().to_audio_segment(duration=len(chunk))
+            chunk = chunk.overlay(noise + settings.EDGE_TTS_STATIC_LEVEL)
+            static_chunks_count += 1
+
+        chunks.append(chunk)
+
+    robotic_audio = sum(chunks) if chunks else audio
+    logger.info(f"Applied static to {static_chunks_count} chunks ({static_chunks_count * chunk_duration_ms}ms total)")
+
+    # Apply quality reduction for digital artifacts
+    robotic_audio = robotic_audio.set_frame_rate(settings.EDGE_TTS_SAMPLE_RATE)
+
+    # Export with configured bitrate
+    robotic_audio.export(str(audio_path), format="mp3", bitrate=settings.EDGE_TTS_BITRATE)
+
+
 def generate_playlist_introduction_text(playlist: MonthlyPlaylist) -> tuple[str, list]:
-    # TODO: read prompt, "PLAYLIST_INTRO_PROMPT.md" from the templates directory
     playlist_intro_prompt_filepath = APP_TEMPLATE_DIR / "PLAYLIST_INTRO_PROMPT.md"
     assert playlist_intro_prompt_filepath.exists(), f"not found: {playlist_intro_prompt_filepath.resolve()}"
     playlist_intro_prompt = playlist_intro_prompt_filepath.read_text(encoding="utf8")
@@ -292,9 +365,15 @@ def generate_playlist_introduction_text(playlist: MonthlyPlaylist) -> tuple[str,
     user_query = [
         f"For the month of {playlist.date.strftime('%B')} write an introduction to selected artists below, describing where and when they will play."  # noqa: E501
         "The site's description is as follows (DO NOT INCLUDE it in the result response, but consider it for flavor):\n"
-        "Forget the stadiums. The best music is found in dark cramped basement bars, or as the call them in Japan, 'Live Houses'."  # noqa: E501
-        "Explore the current Tokyo 'Live House' scene with us, as we spotlight lesser known bands playing the city's most intimate venues."  # noqa: E501
-        "We only share music from artists playing at venues with a capacity of 350 or less.\n\n"
+        "Can't see the artist for your seat? Ditch the arenas and stadiums.\n"
+        'Your new favorite band is playing in dark cramped basement bars, or "Live Houses".\n'
+        'We\'ll help you find your way into the current Tokyo "Live House" scene, '
+        "by spotlighting the lesser known bands playing in venues where you can "
+        'actually "see" the artists.  '
+        "We keep it intimate by only bringing you artists performing at low capacity venues!\n\n"
+        "The text generated here is for a slide presentation voice-over.\n"
+        "Clearly separate the START/EACH PERFORMER/END text, so they can be "
+        "properly applied to the appropriate slide.\n"
         "Selected Artists/Performers (appear in the order they appear in the playlist):\n"
     ]
     # Calculate month boundaries for filtering performances
@@ -319,6 +398,11 @@ def generate_playlist_introduction_text(playlist: MonthlyPlaylist) -> tuple[str,
         if entry.song.performer.name_romaji:
             entry_data.append(
                 f"\t- email: {entry.song.performer.name_romaji}\n",
+            )
+
+        if entry.is_spotlight:
+            entry_data.append(
+                "Monthly Spotlight Artist: True (This performer is a special spotlighted artist for this month!)"
             )
 
         for social in PerformerSocialLink.objects.filter(performer=entry.song.performer):
@@ -373,10 +457,20 @@ def generate_playlist_introduction_text(playlist: MonthlyPlaylist) -> tuple[str,
     return result_introduction, playlist_entry_data
 
 
-def generate_playlist_video(playlist: MonthlyPlaylist) -> Path:  # noqa: C901, PLR0915, PLR0912
-    """Generate a video for the monthly playlist with QR codes, slides, and TTS narration."""
-    # Generate introduction text
-    result_introduction, playlist_entry_data = generate_playlist_introduction_text(playlist)
+def generate_playlist_video(playlist: MonthlyPlaylist, intro_text: str | None = None) -> Path:  # noqa: C901, PLR0915, PLR0912
+    """
+    Generate a video for the monthly playlist with QR codes, slides, and TTS narration.
+
+    Args:
+        playlist: MonthlyPlaylist object to generate video for
+        intro_text: Optional pre-written introduction text. If not provided, text will be generated using AI.
+    """
+    # Generate or use provided introduction text
+    if intro_text:
+        result_introduction = intro_text
+        playlist_entry_data = []  # Not needed when using custom intro text
+    else:
+        result_introduction, playlist_entry_data = generate_playlist_introduction_text(playlist)
 
     # Create temp directory for assets
     temp_dir = Path(tempfile.mkdtemp())
@@ -391,6 +485,25 @@ def generate_playlist_video(playlist: MonthlyPlaylist) -> Path:  # noqa: C901, P
 
     slides = []
 
+    # Load background image
+    background_image_path = Path(settings.BASE_DIR).parent / "static" / "hakkoake_slide_background_202511.png"
+    background_image = None
+    if background_image_path.exists():
+        try:
+            background_image = Image.open(background_image_path).convert("RGBA")
+            # Resize to match video dimensions
+            background_image = background_image.resize((video_width, video_height), Image.Resampling.LANCZOS)
+            # Set 20% transparency (80% opacity = alpha 204)
+            alpha = background_image.split()[3]  # Get alpha channel
+            alpha = alpha.point(lambda p: int(p * 0.8))  # 80% opacity
+            background_image.putalpha(alpha)
+            logger.info(f"Loaded background image: {background_image_path}")
+        except Exception as e:  # noqa: BLE001
+            logger.warning(f"Failed to load background image: {e}")
+            background_image = None
+    else:
+        logger.warning(f"Background image not found: {background_image_path}")
+
     # Helper function to create QR code
     def create_qr_code(url: str, size: int = 200) -> Image.Image:
         qr = qrcode.QRCode(version=1, box_size=10, border=2)
@@ -399,25 +512,66 @@ def generate_playlist_video(playlist: MonthlyPlaylist) -> Path:  # noqa: C901, P
         return qr.make_image(fill_color="black", back_color="white").resize((size, size))
 
     # Helper function to create slide
-    def create_slide(
+    def create_slide(  # noqa: C901, PLR0912, PLR0915
         title: str,
         subtitle: str = "",
         description: str = "",
         qr_urls: list[str] | None = None,
+        qr_labels: list[str] | None = None,
     ) -> Image.Image:
+        # Create base image with solid background color
         img = Image.new("RGB", (video_width, video_height), bg_color)
+
+        # Apply background image if available (with 20% transparency)
+        if background_image:
+            # Convert to RGBA for compositing
+            img = img.convert("RGBA")
+            # Composite background image onto base
+            img = Image.alpha_composite(img, background_image)
+            # Convert back to RGB
+            img = img.convert("RGB")
+
         draw = ImageDraw.Draw(img)
 
+        # Try to load fonts that support Japanese characters
+        # Priority: Noto Sans CJK (best quality) > DroidSansFallbackFull > DejaVu (fallback, no Japanese)
         try:
-            title_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 80)
-            subtitle_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 40)
-            description_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 32)
-            small_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 30)
-        except OSError:
-            title_font = ImageFont.load_default()
-            subtitle_font = ImageFont.load_default()
-            description_font = ImageFont.load_default()
-            small_font = ImageFont.load_default()
+            # Try Noto Sans CJK Bold for titles (index 0 is Japanese)
+            title_font = ImageFont.truetype("/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc", 80, index=0)
+        except (OSError, ValueError):
+            try:
+                # Fallback to DroidSansFallbackFull
+                title_font = ImageFont.truetype("/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf", 80)
+            except OSError:
+                # Last resort: DejaVu (no Japanese support)
+                title_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 80)
+
+        try:
+            # Try Noto Sans CJK Regular for subtitles (index 0 is Japanese)
+            subtitle_font = ImageFont.truetype("/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc", 40, index=0)
+        except (OSError, ValueError):
+            try:
+                subtitle_font = ImageFont.truetype("/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf", 40)
+            except OSError:
+                subtitle_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 40)
+
+        try:
+            # Try Noto Sans CJK Regular for descriptions (index 0 is Japanese)
+            description_font = ImageFont.truetype("/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc", 32, index=0)
+        except (OSError, ValueError):
+            try:
+                description_font = ImageFont.truetype("/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf", 32)
+            except OSError:
+                description_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 32)
+
+        try:
+            # Try Noto Sans CJK Regular for small text (index 0 is Japanese)
+            small_font = ImageFont.truetype("/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc", 30, index=0)
+        except (OSError, ValueError):
+            try:
+                small_font = ImageFont.truetype("/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf", 30)
+            except OSError:
+                small_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 30)
 
         # Draw title
         title_bbox = draw.textbbox((0, 0), title, font=title_font)
@@ -443,16 +597,19 @@ def generate_playlist_video(playlist: MonthlyPlaylist) -> Path:  # noqa: C901, P
         if qr_urls:
             qr_size = 200
             qr_y = 550
-            total_qr_width = len(qr_urls) * qr_size + (len(qr_urls) - 1) * 50
+            total_qr_width = len(qr_urls) * qr_size + (len(qr_urls) - 1) * 400
             qr_x_start = (video_width - total_qr_width) // 2
 
             for i, url in enumerate(qr_urls):
                 qr_img = create_qr_code(url, qr_size)
-                qr_x = qr_x_start + i * (qr_size + 50)
+                qr_x = qr_x_start + i * (qr_size + 400)
                 img.paste(qr_img, (qr_x, qr_y))
 
                 # Add label below QR code
-                label = "Artist" if i == 0 else "Venue"
+                if qr_labels and i < len(qr_labels):
+                    label = qr_labels[i]
+                else:
+                    label = "Artist" if i == 0 else "Venue"
                 label_bbox = draw.textbbox((0, 0), label, font=small_font)
                 label_width = label_bbox[2] - label_bbox[0]
                 label_x = qr_x + (qr_size - label_width) // 2
@@ -492,27 +649,44 @@ def generate_playlist_video(playlist: MonthlyPlaylist) -> Path:  # noqa: C901, P
             .first()
         )
 
-        # Prepare QR codes
+        # Prepare QR codes - always include both artist and venue
         qr_urls = []
-        if performer.website:
-            qr_urls.append(performer.website)
-        if performance and hasattr(performance.live_house, "website"):
+
+        # Artist QR code - use website if available, otherwise use YouTube video URL
+        artist_url = performer.website if performer.website else entry.song.youtube_url
+        if artist_url:
+            qr_urls.append(artist_url)
+
+        # Venue QR code - use live house website if available
+        if performance and hasattr(performance.live_house, "website") and performance.live_house.website.url:
             qr_urls.append(performance.live_house.website.url)
 
-        # Create subtitle with performance info
-        subtitle = performer.name
+        # Create subtitle with performance info - include romaji name in parentheses
+        subtitle = f"{performer.name} ({performer.name_romaji})" if performer.name_romaji else performer.name
         if performance:
             perf_date = performance.performance_date.strftime("%B %d")
-            subtitle = f"{performer.name}\n{perf_date} @ {performance.live_house.name}"
+            if performer.name_romaji:
+                subtitle = f"{performer.name} ({performer.name_romaji})\n{perf_date} @ {performance.live_house.name}"
+            else:
+                subtitle = f"{performer.name}\n{perf_date} @ {performance.live_house.name}"
 
         # Use song title as description
         description = f'"{entry.song.title}"' if entry.song.title else ""
+
+        # Prepare QR code labels (performer romaji name + venue name with "(venue)")
+        qr_labels = []
+        if qr_urls:
+            qr_labels.append(performer.name_romaji if performer.name_romaji else performer.name)
+            if len(qr_urls) > 1:
+                venue_label = f"{performance.live_house.name} (venue)" if performance else "Venue"
+                qr_labels.append(venue_label)
 
         performer_slide = create_slide(
             title=f"#{entry.position}",
             subtitle=subtitle,
             description=description,
             qr_urls=qr_urls if qr_urls else None,
+            qr_labels=qr_labels if qr_labels else None,
         )
         performer_path = temp_dir / f"slide_performer_{entry.position:02d}.png"
         performer_slide.save(performer_path)
@@ -523,18 +697,31 @@ def generate_playlist_video(playlist: MonthlyPlaylist) -> Path:  # noqa: C901, P
     closing_slide = create_slide(
         title="See You Next Month!",
         subtitle="Follow @HAKOAKE for more Live House music",
+        description="Background Music: Get in the Groove – Psychedelic Grunge Instrumental - nickpanek",
+        qr_urls=["https://www.youtube.com/@hakkoakkei"],
+        qr_labels=["HAKOAKE YouTube"],
     )
     closing_path = temp_dir / "slide_closing.png"
     closing_slide.save(closing_path)
     slides.append(closing_path)
 
+    # Parse introduction into sections (intro + performers + closing)
+    expected_sections = 1 + playlist.monthlyplaylistentry_set.count() + 1  # intro + performers + closing
+    sections = parse_introduction_sections(result_introduction, expected_sections)
+
     # Generate TTS using Orpheus model
     logger.info(f"Generating TTS with Orpheus model: {settings.VIDEO_TTS_MODEL}")
-    audio_path = temp_dir / "narration.mp3"
     tokens_path = temp_dir / "orpheus_tokens.txt"
 
+    # Generate TTS audio per section if sections were successfully parsed
+    use_sectioned_audio = len(sections) == expected_sections
+    if use_sectioned_audio:
+        logger.info(f"Generating TTS audio for {len(sections)} sections separately...")
+    else:
+        logger.info("Using single continuous audio (section parsing failed or disabled)")
+
+    # Orpheus token generation (still uses full text)
     try:
-        # Generate TTS tokens using Orpheus
         prompt = f"<|{settings.VIDEO_TTS_VOICE}|>{result_introduction}<|eot_id|>"
         response = ollama.generate(
             model=settings.VIDEO_TTS_MODEL,
@@ -547,7 +734,6 @@ def generate_playlist_video(playlist: MonthlyPlaylist) -> Path:  # noqa: C901, P
             },
         )
 
-        # Save Orpheus tokens for reference
         with tokens_path.open("w") as f:
             if isinstance(response, dict) and "response" in response:
                 f.write(response["response"])
@@ -560,52 +746,156 @@ def generate_playlist_video(playlist: MonthlyPlaylist) -> Path:  # noqa: C901, P
     except Exception:  # noqa: BLE001
         logger.exception("Orpheus TTS generation failed, will use edge-tts fallback")
 
-    # Generate actual audio using edge-tts as Orpheus requires external decoder
-    logger.info(f"Generating audio with edge-tts ({settings.EDGE_TTS_VOICE})...")
+    # Generate audio using edge-tts
+    logger.info(
+        f"Generating audio with edge-tts ({settings.EDGE_TTS_VOICE}, "
+        f"rate: {settings.EDGE_TTS_RATE}, pitch: {settings.EDGE_TTS_PITCH})..."
+    )
 
     async def generate_tts_audio(text: str, output_path: Path) -> None:
-        """Generate TTS audio using edge-tts."""
-        communicate = edge_tts.Communicate(text, settings.EDGE_TTS_VOICE)
+        """Generate TTS audio using edge-tts with voice modulation."""
+        communicate = edge_tts.Communicate(
+            text,
+            settings.EDGE_TTS_VOICE,
+            rate=settings.EDGE_TTS_RATE,
+            pitch=settings.EDGE_TTS_PITCH,
+        )
         await communicate.save(str(output_path))
 
+    # Audio files for each section
+    audio_files = []
+    slide_durations = []
+
     try:
-        # Run async TTS generation
-        asyncio.run(generate_tts_audio(result_introduction, audio_path))
-        logger.info(f"Audio generated successfully: {audio_path}")
+        if use_sectioned_audio:
+            # Generate audio for each section separately
+            for idx, section in enumerate(sections):
+                section_audio_path = temp_dir / f"audio_section_{idx:02d}.mp3"
+                asyncio.run(generate_tts_audio(section["text"], section_audio_path))
+                logger.info(f"Generated audio for section {idx + 1}/{len(sections)}: {section['type']}")
+
+                # Apply robotic effects
+                apply_robotic_effects_to_audio(section_audio_path)
+
+                # Store audio file and calculate duration
+                audio_files.append(section_audio_path)
+
+                # Get audio duration for slide timing
+                audio_segment = AudioSegment.from_mp3(str(section_audio_path))
+                duration_seconds = len(audio_segment) / 1000.0  # Convert ms to seconds
+                slide_durations.append(duration_seconds)
+
+            logger.info(f"Generated {len(audio_files)} audio sections with durations: {slide_durations}")
+
+        else:
+            # Fall back to single continuous audio
+            audio_path = temp_dir / "narration.mp3"
+            asyncio.run(generate_tts_audio(result_introduction, audio_path))
+            logger.info(f"Audio generated successfully: {audio_path}")
+
+            # Apply robotic effects
+            logger.info(
+                f"Applying robotic effects (static: {settings.EDGE_TTS_STATIC_LEVEL}dB, "
+                f"rate: {settings.EDGE_TTS_SAMPLE_RATE}Hz, bitrate: {settings.EDGE_TTS_BITRATE})..."
+            )
+            apply_robotic_effects_to_audio(audio_path)
+            logger.info("Robotic effects applied successfully")
+
+            audio_files = [audio_path]
+            slide_durations = [slide_duration] * len(slides)
 
     except Exception:  # noqa: BLE001
-        logger.exception("edge-tts failed, using silent audio")
+        logger.exception("TTS audio generation failed, using silent audio")
         # Create silent audio as fallback
-        sample_rate = 44100
-        duration = len(slides) * slide_duration
-        silent_audio = np.zeros((int(duration * sample_rate), 2))
-        audio_clip = AudioArrayClip(silent_audio, fps=sample_rate)
-        audio_clip.write_audiofile(str(audio_path), codec="mp3")
+        use_sectioned_audio = False
+        audio_files = []
+        slide_durations = [slide_duration] * len(slides)
 
-    # Create video from slides
+    # Create video from slides with appropriate durations
     logger.info("Creating video from slides...")
     video_clips = []
-    for slide_path in slides:
-        clip = ImageClip(str(slide_path)).with_duration(slide_duration)
-        video_clips.append(clip)
+
+    if use_sectioned_audio and len(audio_files) == len(slides):
+        # Create video with per-slide audio
+        for idx, (slide_path, section_audio_path, duration) in enumerate(
+            zip(slides, audio_files, slide_durations, strict=False)
+        ):
+            # Create visual clip
+            clip = ImageClip(str(slide_path)).with_duration(duration)
+
+            # Add audio to clip
+            try:
+                audio_clip = AudioFileClip(str(section_audio_path))
+                clip = clip.with_audio(audio_clip)
+            except Exception:  # noqa: BLE001
+                logger.exception(f"Failed to add audio to slide {idx}")
+
+            video_clips.append(clip)
+
+        logger.info(f"Created {len(video_clips)} video clips with individual audio tracks")
+
+    else:
+        # Create video with equal duration slides and single audio track
+        for slide_path in slides:
+            clip = ImageClip(str(slide_path)).with_duration(slide_duration)
+            video_clips.append(clip)
+
+        logger.info(f"Created {len(video_clips)} video clips with fixed duration")
 
     # Concatenate all slides
     final_video = concatenate_videoclips(video_clips, method="compose")
 
-    # Add audio if available
-    try:
-        audio = AudioFileClip(str(audio_path))
-        # Trim or loop audio to match video duration
-        if audio.duration > final_video.duration:
-            audio = audio.subclipped(0, final_video.duration)
-        elif audio.duration < final_video.duration:
-            # Loop audio to match video duration
-            loops_needed = int(final_video.duration / audio.duration) + 1
-            audio = concatenate_audioclips([audio] * loops_needed).subclipped(0, final_video.duration)
+    # Add single audio track if not using per-section audio
+    if not use_sectioned_audio and audio_files:
+        try:
+            audio = AudioFileClip(str(audio_files[0]))
+            # Trim or loop audio to match video duration
+            if audio.duration > final_video.duration:
+                audio = audio.subclipped(0, final_video.duration)
+            elif audio.duration < final_video.duration:
+                loops_needed = int(final_video.duration / audio.duration) + 1
+                audio = concatenate_audioclips([audio] * loops_needed).subclipped(0, final_video.duration)
 
-        final_video = final_video.with_audio(audio)
-    except Exception:  # noqa: BLE001
-        logger.exception("Failed to add audio to video")
+            final_video = final_video.with_audio(audio)
+        except Exception:  # noqa: BLE001
+            logger.exception("Failed to add audio to video")
+
+    # Add background music if available
+    background_music_path = (
+        Path(settings.BASE_DIR) / "data" / "get-in-the-groove-psychedelic-grunge-instrumental-391304.mp3"
+    )
+    if background_music_path.exists() and final_video.audio is not None:
+        try:
+            logger.info(f"Adding background music: {background_music_path}")
+
+            # Load background music
+            background_music = AudioFileClip(str(background_music_path))
+
+            # Loop or trim background music to match video duration
+            if background_music.duration < final_video.duration:
+                # Loop the background music
+                loops_needed = int(final_video.duration / background_music.duration) + 1
+                background_music = concatenate_audioclips([background_music] * loops_needed)
+
+            # Trim to exact video duration
+            background_music = background_music.subclipped(0, final_video.duration)
+
+            # Reduce volume to 2% of original (so speech is more prominent)
+            # MoviePy 2.x: use with_volume_scaled()
+            background_music = background_music.with_volume_scaled(0.02)
+
+            # Add fade-out effect (last 3 seconds)
+            fade_duration = 3.0  # seconds
+            background_music = background_music.with_effects([afx.AudioFadeOut(fade_duration)])
+
+            # Mix background music with existing audio
+            mixed_audio = CompositeAudioClip([final_video.audio, background_music])
+            final_video = final_video.with_audio(mixed_audio)
+
+            logger.info("Background music added successfully with fade-out")
+
+        except Exception:  # noqa: BLE001
+            logger.exception("Failed to add background music, continuing without it")
 
     # Save final video
     video_dir = Path(settings.BASE_DIR) / "data" / "videos"

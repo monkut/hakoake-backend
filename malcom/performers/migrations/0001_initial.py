@@ -22,8 +22,8 @@ class Migration(migrations.Migration):
                 ('name_kana', models.CharField(max_length=255, unique=True)),
                 ('name_romaji', models.CharField(max_length=255, unique=True)),
                 ('phone_number', models.CharField(blank=True, default='', max_length=20)),
-                ('email', models.EmailField(blank=True, max_length=255, null=True)  # noqa: DJ001),
-                ('website', models.URLField(blank=True, max_length=255, null=True)  # noqa: DJ001),
+                ('email', models.EmailField(blank=True, max_length=255, null=True)),  # noqa: DJ001
+                ('website', models.URLField(blank=True, max_length=255, null=True)),  # noqa: DJ001
             ],
             options={
                 'verbose_name': 'Performer',
@@ -51,7 +51,7 @@ class Migration(migrations.Migration):
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('platform', models.CharField(max_length=50)),
                 ('platform_id', models.CharField(blank=True, default='', max_length=255)),
-                ('url', models.URLField(blank=True, max_length=255, null=True)  # noqa: DJ001),
+                ('url', models.URLField(blank=True, max_length=255, null=True)),  # noqa: DJ001
                 ('member', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='social_links', to='performers.performermember')),  # noqa: E501
             ],
             options={

@@ -4,6 +4,7 @@ Creates a MonthlyPlaylist for a given target_month.
 This command:
 1. Selects the top 5 Performers performing in the target_date month, ordered by playlist_weight (highest first)
     - exclude performers without a PerformerSong with valid `youtube_video_id` and `youtube_url`
+    - exclude songs longer than MAX_SONG_SELECTION_DURATION_MINUTES (default: 10 minutes)
 2. For each performer, selects their most popular song (by youtube_view_count)
 3. Creates a YouTube playlist with these songs
 4. Creates MonthlyPlaylist and MonthlyPlaylistEntry records
@@ -69,7 +70,7 @@ def get_authorized_youtube_client(client_secrets_file: Path):
             credentials = None
 
     # Check if credentials are valid or need refresh
-    if not credentials or not credentials.valid and credentials and credentials.refresh_token:
+    if credentials and not credentials.valid and credentials.refresh_token:
         logger.info("Refreshing expired credentials")
         try:
             credentials.refresh(Request())
@@ -243,10 +244,13 @@ class Command(BaseCommand):
                 break
 
             # Get most popular song by youtube_view_count
+            # Exclude songs longer than MAX_SONG_SELECTION_DURATION_MINUTES
+            max_duration_seconds = settings.MAX_SONG_SELECTION_DURATION_MINUTES * 60
             most_popular_song = (
                 PerformerSong.objects.filter(
                     performer=performer,
                     youtube_video_id__isnull=False,
+                    youtube_duration_seconds__lte=max_duration_seconds,
                 )
                 .exclude(youtube_video_id="")
                 .order_by("-youtube_view_count", "title")
@@ -314,7 +318,24 @@ class Command(BaseCommand):
                 description_lines.append(
                     f"{performer.name} {performance_date} ({day_of_week}) @{venue_name} - {venue_url}"
                 )
+        tags = (
+            "indies",
+            "indierock",
+            "punk",
+            "punkrock",
+            "garagerock",
+            "インディーズ",
+            "インディーズバンド",
+            "underground",
+            "alternative",
+            "alternativerock",
+            "emorock",
+            "jrock",
+        )
+        tags_str = "\n".join(f"#{t}" for t in tags)
 
+        description_lines.append("\n")
+        description_lines.append(tags_str)
         playlist_description = "\n".join(description_lines)
 
         try:

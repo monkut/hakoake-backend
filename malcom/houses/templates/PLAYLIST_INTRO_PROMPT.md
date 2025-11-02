@@ -1,7 +1,7 @@
 # Task: Generate Monthly Playlist Introduction
 
 ## Context
-You are writing an introduction for HAKOAKE's the given monthly playlist video. HAKOAKE is a music discovery platform focused on Tokyo's underground live music scene.
+You are writing an introduction for Hako-akei's the given monthly playlist video. Hako-akei is a music discovery platform focused on Tokyo's underground live music scene.
 
 ### Site Philosophy
 "Forget the stadiums. The best music is found in the smallest rooms.
@@ -43,7 +43,7 @@ Describe the selection criteria:
 - Set the scene for the given month in Tokyo
 
 2. **Platform Mission** (1-2 sentences)
-- Briefly explain HAKOAKE's purpose
+- Briefly explain Hako-akei's purpose
 - Emphasize the 350-capacity limit and why it matters
 
 3. **This Month's Selection** (3-4 sentences)
@@ -56,18 +56,24 @@ Describe the selection criteria:
 - Encourage watching the full video, mention your favorite in the comments section of this video.
 - Mention the QR codes for more details
 - Invite viewers to catch these artists live
+- Mention to KEEP listening to this playlist to hear song samples from the selected artists.
+- Include the channel link: https://www.youtube.com/@hakkoakkei
 
 ### Constraints
 
-- **Length**: 60-90 seconds when read aloud (approximately 150-225 words)
-- **Format**: Single continuous script (no bullet points or sections in output)
+- **Length**: Total of 60-120 seconds when read aloud across all sections
+  - Intro section: 20-30 seconds (50-75 words)
+  - Each performer section: 10-15 seconds (25-40 words)
+  - Closing section: 10-15 seconds (25-40 words)
+- **Format**: Sectioned with clear headers (see Output Format below)
 - **Language**: English, but feel free to reference Japanese terms naturally
+- Always use the "name romaji" to when writing the Performers names.
 - **Avoid**:
   - Genre labels that pigeonhole artists
   - Clichés like "hidden gem" or "best kept secret"
   - Overly technical music terminology
   - Promises about specific sounds (viewers will hear for themselves)
-  - words: 'excited', 'exciting', 'grab', 'underground', 'vibrant'
+  - words: 'excited', 'exciting', 'grab', 'underground', 'vibrant', ''
 
 ### What Makes a Great Introduction
 
@@ -79,7 +85,25 @@ Describe the selection criteria:
 
 ## Output Format
 
-Provide the introduction as a single paragraph of flowing text, ready to be recorded as voice-over or presented as opening text in the video.
+**IMPORTANT**: Structure your response with clearly separated sections for each slide. Use the following format:
+
+```
+# INTRO
+[Opening hook and platform mission text - 2-4 sentences for the intro slide]
+
+# PERFORMER 1: [Artist Name]
+[Brief introduction text for this performer - 1-2 sentences mentioning song, venue, and date]
+
+# PERFORMER 2: [Artist Name]
+[Brief introduction text for this performer - 1-2 sentences mentioning song, venue, and date]
+
+... [Continue for all performers] ...
+
+# CLOSING
+[Call to action text - 1-2 sentences for the closing slide]
+```
+
+Each section will be narrated separately and synchronized with its corresponding slide. Keep each performer section brief (1-2 sentences, ~15-20 seconds when read aloud) to match the slide duration.
 
 ## Example Opening Lines (for inspiration only, do not copy)
 
@@ -87,7 +111,7 @@ Provide the introduction as a single paragraph of flowing text, ready to be reco
 - "This November, five bands are proving that the best nights in Tokyo happen in rooms small enough to feel the bass in your chest..."
 - "350 people. That's our limit. Because when the venue's small enough, music stops being a spectacle and becomes something you feel..."
 
-Generate the introduction now, keeping it natural, engaging, and true to HAKOAKE's mission of celebrating Tokyo's intimate live music scene.
+Generate the introduction now, keeping it natural, engaging, and true to Hako-akei's mission of celebrating Tokyo's intimate live music scene.
 
 This prompt is designed to:
 1. Provide complete context - Agent understands the platform, mission, and specific playlist details

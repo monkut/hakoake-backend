@@ -17,12 +17,12 @@ class Migration(migrations.Migration):
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('created_datetime', models.DateTimeField(auto_now_add=True)),
                 ('updated_datetime', models.DateTimeField(auto_now=True)),
-                ('ticket_contact_email', models.EmailField(blank=True, max_length=255, null=True)  # noqa: DJ001),
-                ('ticket_contact_phone', models.CharField(blank=True, max_length=20, null=True)  # noqa: DJ001),
-                ('ticket_url', models.URLField(blank=True, max_length=255, null=True)  # noqa: DJ001),
-                ('ticket_price', models.DecimalField(blank=True, decimal_places=2, max_digits=10, null=True)  # noqa: DJ001),
-                ('ticket_sales_start_date', models.DateTimeField(blank=True, null=True)  # noqa: DJ001),
-                ('ticket_sales_end_date', models.DateTimeField(blank=True, null=True)  # noqa: DJ001),
+                ('ticket_contact_email', models.EmailField(blank=True, max_length=255, null=True)),  # noqa: DJ001
+                ('ticket_contact_phone', models.CharField(blank=True, max_length=20, null=True)),  # noqa: DJ001
+                ('ticket_url', models.URLField(blank=True, max_length=255, null=True)),  # noqa: DJ001
+                ('ticket_price', models.DecimalField(blank=True, decimal_places=2, max_digits=10, null=True)),  # noqa: DJ001
+                ('ticket_sales_start_date', models.DateTimeField(blank=True, null=True)),  # noqa: DJ001
+                ('ticket_sales_end_date', models.DateTimeField(blank=True, null=True)),  # noqa: DJ001
                 ('performance', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='ticket_purchase_info', to='houses.performanceschedule')),  # noqa: E501
             ],
             options={

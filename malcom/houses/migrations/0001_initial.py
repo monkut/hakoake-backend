@@ -41,8 +41,8 @@ class Migration(migrations.Migration):
                 ('address', models.CharField(max_length=255)),
                 ('capacity', models.PositiveIntegerField()),
                 ('opened_date', models.DateField()),
-                ('closed_date', models.DateField(default=None, null=True)  # noqa: DJ001),
-                ('last_collected_datetime', models.DateTimeField(blank=True, null=True)  # noqa: DJ001),
+                ('closed_date', models.DateField(default=None, null=True)),  # noqa: DJ001
+                ('last_collected_datetime', models.DateTimeField(blank=True, null=True)),  # noqa: DJ001
                 ('last_collection_state', models.CharField(choices=[('pending', 'pending'), ('success', 'success'), ('error', 'error'), ('timeout', 'timeout')], default=houses.definitions.CrawlerCollectionState['PENDING'], max_length=20)),  # noqa: E501
                 ('website', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='live_houses', to='houses.livehousewebsite')),  # noqa: E501
             ],
