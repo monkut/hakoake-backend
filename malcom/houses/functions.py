@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import random
 import re
 import tempfile
 from datetime import datetime
@@ -314,20 +315,99 @@ def apply_robotic_effects_to_audio(audio_path: Path) -> None:
     # Load the audio
     audio = AudioSegment.from_mp3(str(audio_path))
 
-    # Add static at the end of the audio (600ms)
-    static_duration_ms = 600
-    noise = WhiteNoise().to_audio_segment(duration=static_duration_ms)
-    static = noise + settings.EDGE_TTS_STATIC_LEVEL
+    # Create glitchy static at the end of the audio (550ms total)
+    # Use fixed seed to ensure same glitchy pattern across all slides
+    static_duration_ms = 550
+    gap_silence_probability = 0.5  # 50% chance of silence vs quiet noise
+    rng = random.Random(42)  # Fixed seed for consistent glitch pattern  # noqa: S311
 
-    # Append static to the end
-    robotic_audio = audio + static
-    logger.info(f"Applied {static_duration_ms}ms static to end of audio")
+    # Create glitchy static by combining multiple short bursts with varying levels and gaps
+    glitch_static = AudioSegment.silent(duration=0)
+    remaining_duration = static_duration_ms
+
+    while remaining_duration > 0:
+        # Random burst duration between 20-80ms (but consistent due to seed)
+        burst_duration = min(rng.randint(20, 80), remaining_duration)
+
+        # Create noise burst with level variation
+        noise_burst = WhiteNoise().to_audio_segment(duration=burst_duration)
+        level_variation = rng.uniform(-5.0, 5.0)
+        varied_level = settings.EDGE_TTS_STATIC_LEVEL + level_variation
+        noise_burst = noise_burst + varied_level
+
+        # Add the burst
+        glitch_static = glitch_static + noise_burst
+        remaining_duration -= burst_duration
+
+        # Add random gap (silence or very quiet noise) between bursts
+        if remaining_duration > 0:
+            gap_duration = min(rng.randint(5, 30), remaining_duration)
+            if rng.random() < gap_silence_probability:
+                # Complete silence
+                gap = AudioSegment.silent(duration=gap_duration)
+            else:
+                # Very quiet noise
+                gap = WhiteNoise().to_audio_segment(duration=gap_duration)
+                gap = gap + (settings.EDGE_TTS_STATIC_LEVEL - 15)  # Much quieter
+            glitch_static = glitch_static + gap
+            remaining_duration -= gap_duration
+
+    # Append glitchy static to the end
+    robotic_audio = audio + glitch_static
+    logger.info(f"Applied {static_duration_ms}ms glitchy static to end of audio")
 
     # Apply quality reduction for digital artifacts
     robotic_audio = robotic_audio.set_frame_rate(settings.EDGE_TTS_SAMPLE_RATE)
 
     # Export with configured bitrate
     robotic_audio.export(str(audio_path), format="mp3", bitrate=settings.EDGE_TTS_BITRATE)
+
+
+def create_rgb_shift_effect(clip: ImageClip, shift_amount: int = 5) -> ImageClip:
+    """Apply RGB channel shift effect for a glitch look."""
+
+    def rgb_shift(get_frame, t):  # noqa: ANN001, ANN202
+        """Shift RGB channels to create chromatic aberration effect."""
+        frame = get_frame(t)
+        shifted = frame.copy()
+
+        # Shift red channel right
+        shifted[:, shift_amount:, 0] = frame[:, :-shift_amount, 0]
+        # Shift blue channel left
+        shifted[:, :-shift_amount, 2] = frame[:, shift_amount:, 2]
+
+        return shifted
+
+    return clip.transform(rgb_shift)
+
+
+def create_scanlines_effect(clip: ImageClip, line_height: int = 4, intensity: float = 0.3) -> ImageClip:
+    """Add horizontal scanline effect."""
+
+    def add_scanlines(get_frame, t):  # noqa: ANN001, ANN202
+        """Add horizontal scanlines to the frame."""
+        frame = get_frame(t).copy()
+        h, w = frame.shape[:2]
+
+        # Create scanline mask
+        for y in range(0, h, line_height):
+            frame[y : y + 2] = frame[y : y + 2] * (1 - intensity)
+
+        return frame
+
+    return clip.transform(add_scanlines)
+
+
+def create_glitch_transition(last_frame_path: Path, duration: float = 0.1) -> ImageClip:
+    """Create a short glitch transition clip using the last frame of previous slide."""
+    # Load the last frame
+    base_clip = ImageClip(str(last_frame_path)).with_duration(duration)
+
+    # Apply multiple glitch effects
+    glitched = create_rgb_shift_effect(base_clip, shift_amount=8)
+    glitched = create_scanlines_effect(glitched, line_height=3, intensity=0.4)
+
+    return glitched
 
 
 def generate_playlist_introduction_text(playlist: MonthlyPlaylist) -> tuple[str, list]:
@@ -351,6 +431,7 @@ def generate_playlist_introduction_text(playlist: MonthlyPlaylist) -> tuple[str,
     # prepare playlist data:
     user_query = [
         f"For the month of {playlist.date.strftime('%B')} write an introduction to selected artists below, describing where and when they will play."  # noqa: E501
+        "ALWAYS mention the date and day of the week when introduction where/when the artists play."
         "The site's description is as follows (DO NOT INCLUDE it in the result response, but consider it for flavor):\n"
         "Can't see the artist for your seat? Ditch the arenas and stadiums.\n"
         'Your new favorite band is playing in dark cramped basement bars, or "Live Houses".\n'
@@ -664,7 +745,7 @@ def generate_playlist_video(playlist: MonthlyPlaylist, intro_text: str | None = 
         # Create subtitle with performance info - include romaji name in parentheses
         subtitle = f"{performer.name} ({performer.name_romaji})" if performer.name_romaji else performer.name
         if performance:
-            perf_date = performance.performance_date.strftime("%B %d")
+            perf_date = performance.performance_date.strftime("%B %d (%a)")
             if performer.name_romaji:
                 subtitle = f"{performer.name} ({performer.name_romaji})\n{perf_date} @ {performance.live_house.name}"
             else:
@@ -832,15 +913,27 @@ def generate_playlist_video(playlist: MonthlyPlaylist, intro_text: str | None = 
 
             video_clips.append(clip)
 
-        logger.info(f"Created {len(video_clips)} video clips with individual audio tracks")
+            # Add glitch transition between slides (except after last slide)
+            if idx < len(slides) - 1:
+                glitch_duration = 0.1  # 100ms glitch
+                glitch_clip = create_glitch_transition(slide_path, duration=glitch_duration)
+                video_clips.append(glitch_clip)
+
+        logger.info(f"Created {len(video_clips)} video clips with individual audio tracks and glitch transitions")
 
     else:
         # Create video with equal duration slides and single audio track
-        for slide_path in slides:
+        for idx, slide_path in enumerate(slides):
             clip = ImageClip(str(slide_path)).with_duration(slide_duration)
             video_clips.append(clip)
 
-        logger.info(f"Created {len(video_clips)} video clips with fixed duration")
+            # Add glitch transition between slides (except after last slide)
+            if idx < len(slides) - 1:
+                glitch_duration = 0.1  # 100ms glitch
+                glitch_clip = create_glitch_transition(slide_path, duration=glitch_duration)
+                video_clips.append(glitch_clip)
+
+        logger.info(f"Created {len(video_clips)} video clips with fixed duration and glitch transitions")
 
     # Concatenate all slides
     final_video = concatenate_videoclips(video_clips, method="compose")

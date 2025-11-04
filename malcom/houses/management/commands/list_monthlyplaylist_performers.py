@@ -6,7 +6,9 @@ from houses.models import MonthlyPlaylist, MonthlyPlaylistEntry, PerformanceSche
 
 
 class Command(BaseCommand):
-    help = "List performers from monthly playlist with their next performance venue, date, and cost information"
+    help = (
+        "List performers from monthly playlist with their performance in the playlist month (matching video generation)"
+    )
 
     def add_arguments(self, parser: ArgumentParser) -> None:
         parser.add_argument(
@@ -20,11 +22,12 @@ class Command(BaseCommand):
             help="Only show upcoming performances (performance date >= today)",
         )
 
-    def handle(self, *args, **options) -> None:  # noqa: ANN002, ANN003, PLR0912, PLR0915
+    def handle(self, *args, **options) -> None:  # noqa: ANN002, ANN003, C901, PLR0912, PLR0915
         """
-        List performers from a monthly playlist with their next performance venue and cost information.
+        List performers from a monthly playlist with their performance venue and cost information.
 
-        Shows only the first/next upcoming performance for each performer.
+        Shows only the first performance in the playlist month for each performer.
+        This matches the performance shown in the video generation.
         Outputs: position, performer_id, performer_name, venue_name, performance_date,
         presale_price, door_price, song_title, duration, youtube_url
         """
@@ -97,14 +100,25 @@ class Command(BaseCommand):
             performer = entry.song.performer
             performers_in_playlist.add(performer.id)
 
-            # Get performance schedules for this performer
-            schedules = PerformanceSchedule.objects.filter(performers=performer).select_related("live_house")
+            # Calculate month boundaries (same logic as video generation)
+            month_start = playlist.date
+            if playlist.date.month == 12:  # noqa: PLR2004
+                month_end = playlist.date.replace(year=playlist.date.year + 1, month=1, day=1)
+            else:
+                month_end = playlist.date.replace(month=playlist.date.month + 1, day=1)
 
-            # Apply date filter if upcoming_only is set
+            # Get performance schedules for this performer in the playlist month
+            schedules = PerformanceSchedule.objects.filter(
+                performers=performer,
+                performance_date__gte=month_start,
+                performance_date__lt=month_end,
+            ).select_related("live_house")
+
+            # Apply additional date filter if upcoming_only is set
             if upcoming_only:
                 schedules = schedules.filter(performance_date__gte=today)
 
-            schedules = schedules.order_by("performance_date")
+            schedules = schedules.order_by("performance_date", "start_time")
 
             # Show only the first/next performance for each performer
             first_schedule = schedules.first()

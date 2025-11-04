@@ -75,6 +75,8 @@ Describe the selection criteria:
   - Promises about specific sounds (viewers will hear for themselves)
   - Repetitive phrases across performer sections (e.g., repeating "don't miss out", "first time", etc.)
   - Words: 'excited', 'exciting', 'grab', 'underground', 'vibrant'
+  - mentioning the playlist song will be performed (it may not be performed)
+  - DO NOT pronounce the site (HAKKO-AKKEI/HAKOAKE), use 'we' instead.
 
 ### What Makes a Great Introduction
 
