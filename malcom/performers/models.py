@@ -21,6 +21,18 @@ class Performer(TimestampedModel):
     playlist_weight_update_datetime = models.DateTimeField(
         auto_now_add=True, help_text="Updated when playlist_weight is updated"
     )
+    performer_image = models.ImageField(
+        upload_to="performers/images/",
+        blank=True,
+        null=True,
+        help_text="Representative performer/band photo",
+    )
+    logo_image = models.ImageField(
+        upload_to="performers/logos/",
+        blank=True,
+        null=True,
+        help_text="Performer/band logo image",
+    )
 
     def __str__(self) -> str:
         return self.name
@@ -56,8 +68,8 @@ class Performer(TimestampedModel):
 
     def has_valid_online_presence(self):
         """Check if performer has valid social media or unique website presence."""
-        # Check for social media links
-        if hasattr(self, "social_links") and self.social_links.exists():
+        # Check for social media links (only if performer is saved to database)
+        if self.pk and hasattr(self, "social_links") and self.social_links.exists():
             valid_social_platforms = [
                 "twitter",
                 "instagram",
@@ -155,6 +167,19 @@ class Performer(TimestampedModel):
 
                 logger = logging.getLogger(__name__)
                 logger.warning(f"Failed to search YouTube for {self.name}: {str(e)}")
+
+        # For new instances, fetch performer images
+        if is_new and not hasattr(self, "_skip_image_fetch"):
+            try:
+                from .image_fetcher import fetch_and_update_performer_images  # noqa: PLC0415
+
+                fetch_and_update_performer_images(self)
+            except Exception as e:  # noqa: BLE001
+                # Don't fail performer creation if image fetching fails
+                import logging  # noqa: PLC0415
+
+                logger = logging.getLogger(__name__)
+                logger.warning(f"Failed to fetch images for {self.name}: {str(e)}")
 
         # For existing instances or after initial save, validate online presence
         if not is_new or hasattr(self, "_skip_online_validation"):

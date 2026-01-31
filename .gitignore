@@ -228,4 +228,6 @@ CLAUDE.md
 client_secret.json
 secrets.json
 malcom/data/*
+malcom/media/*
 token.pickle
+

@@ -55,7 +55,7 @@ Describe the selection criteria:
 4. **Call to Action** (1-2 sentences)
 - Encourage watching the full video, mention your favorite in the comments section of this video.
 - Mention the QR codes for more details
-- Invite viewers to catch these artists live
+- Invite viewers to see these artists live, like and subscribe to the artist's channel
 - Mention to KEEP listening to this playlist to hear song samples from the selected artists.
 - Include the channel link: @hakkoakkei
 

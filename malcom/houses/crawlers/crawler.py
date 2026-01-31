@@ -2,7 +2,7 @@ import logging
 import re
 from abc import ABC
 from collections.abc import Callable
-from datetime import date, datetime
+from datetime import date, datetime, time, timedelta
 from urllib.parse import urljoin
 
 import requests
@@ -35,6 +35,45 @@ HTTP_SUCCESS = 200  # noqa: N806
 MAX_SOCIAL_LINKS = 5  # noqa: N806
 MAX_CONTEXT_CHARS = 200  # noqa: N806
 MAX_PERFORMERS_IN_CONTEXT = 3  # noqa: N806
+
+
+def parse_japanese_time(time_str: str) -> tuple[time | None, int]:
+    """
+    Parse time strings including Japanese late-night notation (24:00+).
+
+    Japanese venues use times like '24:00' (midnight), '25:00' (1am), etc.
+    to indicate late-night shows continuing past midnight.
+
+    Returns:
+        Tuple of (time, days_offset) where days_offset is the number of days
+        to add to the associated date. Returns (None, 0) if parsing fails.
+
+    Examples:
+        '18:30' -> (time(18, 30), 0)
+        '24:00' -> (time(0, 0), 1)   # midnight next day
+        '25:30' -> (time(1, 30), 1)  # 1:30 AM next day
+    """
+    if not time_str or not isinstance(time_str, str):
+        return None, 0
+
+    time_str = time_str.strip()
+    match = re.match(r"^(\d{1,2}):(\d{2})$", time_str)
+    if not match:
+        return None, 0
+
+    hour = int(match.group(1))
+    minute = int(match.group(2))
+
+    # Calculate days offset for hours >= 24
+    days_offset = hour // 24
+    hour = hour % 24
+
+    try:
+        parsed_time = datetime.strptime(f"{hour:02d}:{minute:02d}", "%H:%M").time()  # noqa: DTZ007
+    except ValueError:
+        return None, 0
+    else:
+        return parsed_time, days_offset
 
 
 class PerformerValidationError(ValueError):
@@ -88,12 +127,12 @@ class LiveHouseWebsiteCrawler(ABC):  # noqa: B024
         """Main method to run the crawler for a specific website."""
         logger.info(f"Starting crawler for: {self.website.url}")
 
-        with transaction.atomic():
-            # Update state to in_progress
-            self.website.state = WebsiteProcessingState.IN_PROGRESS
-            self.website.save()
+        # Update state to in_progress (outside transaction so it persists)
+        self.website.state = WebsiteProcessingState.IN_PROGRESS
+        self.website.save()
 
-            try:
+        try:
+            with transaction.atomic():
                 # Fetch main page
                 logger.debug(f"Fetching main page: {self.website.url}")
                 main_page_content = self.fetch_page(self.website.url)
@@ -125,29 +164,22 @@ class LiveHouseWebsiteCrawler(ABC):  # noqa: B024
                 live_house.last_collection_state = CrawlerCollectionState.SUCCESS
                 live_house.save()
 
-                # Update state to completed
-                self.website.state = WebsiteProcessingState.COMPLETED
-                self.website.save()
-                logger.info(f"Successfully completed crawling: {self.website.url}")
+            # Update state to completed (outside transaction so it persists)
+            self.website.state = WebsiteProcessingState.COMPLETED
+            self.website.save()
+            logger.info(f"Successfully completed crawling: {self.website.url}")
 
-            except requests.Timeout:
-                # Handle timeout specifically
-                logger.exception(f"Timeout while crawling {self.website.url}")
-                if "live_house" in locals():
-                    live_house.last_collection_state = CrawlerCollectionState.TIMEOUT
-                    live_house.save()
-                self.website.state = WebsiteProcessingState.FAILED
-                self.website.save()
-                raise
-            except Exception:  # noqa: BLE001
-                # Handle all other errors
-                logger.exception(f"Error while crawling {self.website.url}")
-                if "live_house" in locals():
-                    live_house.last_collection_state = CrawlerCollectionState.ERROR
-                    live_house.save()
-                self.website.state = WebsiteProcessingState.FAILED
-                self.website.save()
-                raise
+        except requests.Timeout:
+            # Handle timeout specifically (outside transaction so state persists)
+            logger.exception(f"Timeout while crawling {self.website.url}")
+            self.website.state = WebsiteProcessingState.FAILED
+            self.website.save()
+
+        except Exception:  # noqa: BLE001
+            # Handle all other errors (outside transaction so state persists)
+            logger.exception(f"Error while crawling {self.website.url}")
+            self.website.state = WebsiteProcessingState.FAILED
+            self.website.save()
 
     def fetch_page(self, url: str) -> str:
         """Fetch the content of a page from the given URL."""
@@ -302,11 +334,18 @@ class LiveHouseWebsiteCrawler(ABC):  # noqa: B024
         logger.debug(f"Next month URL: {next_month_url}")
 
         if next_month_url:
-            logger.debug(f"Fetching next month page: {next_month_url}")
-            next_month_content = self.fetch_page(next_month_url)
-            next_month_schedules = self.extract_performance_schedules(next_month_content)
-            logger.info(f"Extracted {len(next_month_schedules)} schedules from next month")
-            schedules.extend(next_month_schedules)
+            try:
+                logger.debug(f"Fetching next month page: {next_month_url}")
+                next_month_content = self.fetch_page(next_month_url)
+                next_month_schedules = self.extract_performance_schedules(next_month_content)
+                logger.info(f"Extracted {len(next_month_schedules)} schedules from next month")
+                schedules.extend(next_month_schedules)
+            except requests.HTTPError as e:
+                logger.warning(f"Failed to fetch next month page (HTTP {e.response.status_code}): {next_month_url}")
+                logger.debug("Continuing with current month schedules only")
+            except Exception as e:  # noqa: BLE001
+                logger.warning(f"Error fetching next month page: {e}")
+                logger.debug("Continuing with current month schedules only")
 
         logger.info(f"Creating {len(schedules)} performance schedule records")
         # Create PerformanceSchedule instances
@@ -360,11 +399,20 @@ class LiveHouseWebsiteCrawler(ABC):  # noqa: B024
 
         open_time = data["open_time"]
         if isinstance(open_time, str):
-            open_time = datetime.strptime(open_time, "%H:%M").time()  # noqa: DTZ007
+            open_time, _ = parse_japanese_time(open_time)
+            if open_time is None:
+                logger.warning(f"Unparsable open_time value: '{data['open_time']}' - setting to None")
 
         start_time = data["start_time"]
+        start_time_days_offset = 0
         if isinstance(start_time, str):
-            start_time = datetime.strptime(start_time, "%H:%M").time()  # noqa: DTZ007
+            start_time, start_time_days_offset = parse_japanese_time(start_time)
+            if start_time is None:
+                logger.warning(f"Unparsable start_time value: '{data['start_time']}' - setting to None")
+
+        # Adjust performance_date if start_time was >= 24:00 (e.g., '24:00' means next day)
+        if start_time_days_offset > 0:
+            performance_date = performance_date + timedelta(days=start_time_days_offset)
 
         # Process and validate performers BEFORE any database operations
         performer_names = data.get("performers", [])
@@ -499,7 +547,7 @@ class LiveHouseWebsiteCrawler(ABC):  # noqa: B024
                 r"[〒]\s*(\d{3}-\d{4})\s*([^0-9\n]{10,50})",
                 r"住所[：:\s]*([^0-9\n]{10,50})",
                 r"Address[：:\s]*([^0-9\n]{10,50})",
-                r"東京都[^0-9\n]{5,40}",
+                r"(東京都[^0-9\n]{5,40})",
             ]
 
             for pattern in address_patterns:
@@ -507,8 +555,11 @@ class LiveHouseWebsiteCrawler(ABC):  # noqa: B024
                 if match:
                     if len(match.groups()) > 1:
                         existing_livehouse.address = match.group(2).strip()
-                    else:
+                    elif len(match.groups()) == 1:
                         existing_livehouse.address = match.group(1).strip()
+                    else:
+                        # No capturing groups, use entire match
+                        existing_livehouse.address = match.group(0).strip()
                     break
 
         # Try to find phone number if not set
