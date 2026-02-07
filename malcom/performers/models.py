@@ -33,6 +33,18 @@ class Performer(TimestampedModel):
         null=True,
         help_text="Performer/band logo image",
     )
+    fanart_image = models.ImageField(
+        upload_to="performers/fanart/",
+        blank=True,
+        null=True,
+        help_text="Performer/band fanart image",
+    )
+    banner_image = models.ImageField(
+        upload_to="performers/banners/",
+        blank=True,
+        null=True,
+        help_text="Performer/band banner image",
+    )
 
     def __str__(self) -> str:
         return self.name
@@ -226,6 +238,9 @@ class PerformerSocialLink(TimestampedModel):
     verified_datetime = models.DateTimeField(
         blank=True, null=True, default=None, help_text="Date and time when the PerformerSocialLink is verified"
     )
+
+    class Meta:
+        unique_together = [("performer", "platform")]
 
 
 class PerformerMember(TimestampedModel):

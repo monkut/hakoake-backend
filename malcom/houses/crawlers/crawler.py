@@ -1191,18 +1191,15 @@ class LiveHouseWebsiteCrawler(ABC):  # noqa: B024
                 if link_info["platform"] == "youtube":
                     continue
 
-                # Check if this social link already exists
-                existing_link = PerformerSocialLink.objects.filter(
-                    performer=performer, platform=link_info["platform"], platform_id=link_info["platform_id"]
-                ).first()
-
-                if not existing_link:
-                    PerformerSocialLink.objects.create(
-                        performer=performer,
-                        platform=link_info["platform"],
-                        platform_id=link_info["platform_id"],
-                        url=link_info["url"],
-                    )
+                _, created = PerformerSocialLink.objects.get_or_create(
+                    performer=performer,
+                    platform=link_info["platform"],
+                    defaults={
+                        "platform_id": link_info["platform_id"],
+                        "url": link_info["url"],
+                    },
+                )
+                if created:
                     logger.debug(f"Added {link_info['platform']} link for {performer.name}: {link_info['url']}")
 
         except Exception as e:  # noqa: BLE001

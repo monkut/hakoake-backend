@@ -156,11 +156,13 @@ class Command(BaseCommand):
                     if channel_id:
                         channel_url = f"https://www.youtube.com/channel/{channel_id}"
 
-                        PerformerSocialLink.objects.create(
+                        PerformerSocialLink.objects.get_or_create(
                             performer=performer,
                             platform="youtube",
-                            platform_id=channel_id,
-                            url=channel_url,
+                            defaults={
+                                "platform_id": channel_id,
+                                "url": channel_url,
+                            },
                         )
 
                         self.stdout.write(
