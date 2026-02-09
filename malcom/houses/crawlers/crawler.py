@@ -11,6 +11,7 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 from performers.models import Performer, PerformerSocialLink
+from performers.normalization import find_existing_performer
 from pykakasi import kakasi
 
 from ..definitions import CrawlerCollectionState, WebsiteProcessingState
@@ -23,8 +24,8 @@ MIN_LIVEHOUSE_CAPACITY = 50  # noqa: N806
 MAX_LIVEHOUSE_CAPACITY = 350  # noqa: N806
 MIN_TICKET_PRICE = 500  # noqa: N806
 MAX_TICKET_PRICE = 20000  # noqa: N806
-MIN_YEAR = 2024  # noqa: N806
-MAX_YEAR = 2026  # noqa: N806
+YEAR_LOOKBACK = 1  # noqa: N806
+YEAR_LOOKAHEAD = 1  # noqa: N806
 MONTHS_PER_YEAR = 12  # noqa: N806
 MAX_DAYS_PER_MONTH = 31  # noqa: N806
 MAX_SCHEDULES_PER_FETCH = 20  # noqa: N806
@@ -270,9 +271,13 @@ class LiveHouseWebsiteCrawler(ABC):  # noqa: B024
         """
         Find the link to the schedule page.
 
-        Default implementation looks for common schedule-related keywords.
-        Subclasses can override for site-specific logic.
+        First checks the schedule_url field on the website model.
+        Falls back to generic HTML-based schedule link discovery.
+        Subclasses can override for site-specific logic (e.g. dynamic date-based URLs).
         """
+        if self.website.schedule_url:
+            logger.debug(f"Using stored schedule_url: {self.website.schedule_url}")
+            return self.website.schedule_url
         return self._generic_find_schedule_link(html_content)
 
     def extract_performance_schedules(self, html_content: str) -> list[dict]:  # noqa: C901, PLR0912, PLR0915, PLR0911
@@ -418,7 +423,7 @@ class LiveHouseWebsiteCrawler(ABC):  # noqa: B024
         performer_names = data.get("performers", [])
         if isinstance(performer_names, str):
             # Split by common delimiters
-            performer_names = re.split(r"[,、/]", performer_names)
+            performer_names = re.split(r"[,、/／]", performer_names)
             performer_names = [name.strip() for name in performer_names if name.strip()]
 
         # Filter and clean performer names
@@ -431,8 +436,8 @@ class LiveHouseWebsiteCrawler(ABC):  # noqa: B024
         # Validate all performers and collect valid ones BEFORE database operations
         valid_performers = []
         for performer_name in clean_performer_names:
-            # Check if performer already exists
-            existing_performer = Performer.objects.filter(name=performer_name).first()
+            # Check if performer already exists (normalized lookup)
+            existing_performer = find_existing_performer(performer_name)
             if existing_performer:
                 # Existing performer, assume it's already validated
                 valid_performers.append(existing_performer)
@@ -494,28 +499,33 @@ class LiveHouseWebsiteCrawler(ABC):  # noqa: B024
         # Save new performers and add all valid performers to the schedule
         for performer in valid_performers:
             if performer.pk is None:  # New performer not yet saved
-                # Use get_or_create to avoid UNIQUE constraint failures on name_romaji
-                # If a performer with the same romaji exists, use that one instead
-                defaults = {
-                    "name": performer.name,
-                    "name_kana": performer.name_kana,
-                }
-                # Add website if it's set on the performer object
-                if hasattr(performer, "website") and performer.website:
-                    defaults["website"] = performer.website
-
-                existing_performer, created = Performer.objects.get_or_create(
-                    name_romaji=performer.name_romaji, defaults=defaults
-                )
-                if created:
-                    logger.info(f"✅ Created performer in database: {existing_performer.name}")
+                # Try normalized match before falling back to get_or_create on romaji
+                matched = find_existing_performer(performer.name)
+                if matched:
+                    performer = matched  # noqa: PLW2901
                 else:
-                    logger.info(
-                        f"ℹ️ Using existing performer with same romaji: {existing_performer.name} "
-                        f"(requested: {performer.name}, romaji: {performer.name_romaji})"
+                    # Use get_or_create to avoid UNIQUE constraint failures on name_romaji
+                    # If a performer with the same romaji exists, use that one instead
+                    defaults = {
+                        "name": performer.name,
+                        "name_kana": performer.name_kana,
+                    }
+                    # Add website if it's set on the performer object
+                    if hasattr(performer, "website") and performer.website:
+                        defaults["website"] = performer.website
+
+                    existing_performer, created = Performer.objects.get_or_create(
+                        name_romaji=performer.name_romaji, defaults=defaults
                     )
-                # Use the existing performer for the schedule
-                performer = existing_performer  # noqa: PLW2901
+                    if created:
+                        logger.info(f"✅ Created performer in database: {existing_performer.name}")
+                    else:
+                        logger.info(
+                            f"ℹ️ Using existing performer with same romaji: {existing_performer.name} "
+                            f"(requested: {performer.name}, romaji: {performer.name_romaji})"
+                        )
+                    # Use the existing performer for the schedule
+                    performer = existing_performer  # noqa: PLW2901
             performance.performers.add(performer)
 
         # Extract and create/update ticket information from the context
@@ -657,7 +667,9 @@ class LiveHouseWebsiteCrawler(ABC):  # noqa: B024
             r"(\d{4})-(\d{1,2})-(\d{1,2})",
         ]
 
-        current_year = 2025  # Default year
+        today = timezone.localdate()
+        current_year = today.year
+        current_month = today.month
         found_dates = set()
 
         for pattern in date_patterns:
@@ -667,9 +679,15 @@ class LiveHouseWebsiteCrawler(ABC):  # noqa: B024
 
                 if len(groups) == 3:  # Year, month, day  # noqa: PLR2004
                     year, month, day = groups
-                elif len(groups) == 2:  # Month, day (use current year)  # noqa: PLR2004
+                elif len(groups) == 2:  # Month, day (infer year)  # noqa: PLR2004
                     month, day = groups
-                    year = str(current_year)
+                    month_int = int(month)
+                    # If current month is late in the year and parsed month is early,
+                    # assume it belongs to next year (e.g. December page showing January dates)
+                    if current_month >= 11 and month_int <= 2:  # noqa: PLR2004
+                        year = str(current_year + 1)
+                    else:
+                        year = str(current_year)
                 else:
                     continue
 
@@ -679,7 +697,9 @@ class LiveHouseWebsiteCrawler(ABC):  # noqa: B024
                     day_int = int(day)
 
                     # Validate date ranges
-                    if 2024 <= year_int <= 2026 and 1 <= month_int <= 12 and 1 <= day_int <= 31:  # noqa: PLR2004
+                    min_year = current_year - YEAR_LOOKBACK
+                    max_year = current_year + YEAR_LOOKAHEAD
+                    if min_year <= year_int <= max_year and 1 <= month_int <= 12 and 1 <= day_int <= 31:  # noqa: PLR2004
                         date_str = f"{year_int}-{month_int:02d}-{day_int:02d}"
                         if date_str not in found_dates:
                             found_dates.add(date_str)
@@ -839,6 +859,12 @@ class LiveHouseWebsiteCrawler(ABC):  # noqa: B024
         if not name:
             return ""
 
+        # Strip BOM and whitespace
+        name = name.strip("\ufeff")
+
+        # Strip "and more" suffixes
+        name = re.sub(r"\s*(?:\.{0,3}|…)\s*and\s+more.*$", "", name, flags=re.IGNORECASE)
+
         # Remove common prefixes/suffixes that aren't part of performer names
         name = name.strip()
 
@@ -894,6 +920,15 @@ class LiveHouseWebsiteCrawler(ABC):  # noqa: B024
             r"^(月～|火～|水～|木～|金～|土～|日～)",  # Business hours start
             r"日曜.*除く",  # "Excluding Sundays"
             r"祝\s*日",  # "Holidays"
+            # URLs and file paths
+            r"https?://",  # URLs
+            r"\.(html|php|do|aspx|jsp)(\b|$)",  # File extensions
+            r"^\d+[_/]\w+",  # Path-like strings
+            r"^and\s+more",  # Bare "and more" entries
+            # Japanese junk text
+            r"チケット.*(予約|購入|はこちら|コチラ)",  # Ticket purchase text
+            # Instrument/role prefixes
+            r"^(FOOD|Vocals|Guitar|Bass|Drums)[＞>：:]",
         ]
 
         for pattern in invalid_patterns:

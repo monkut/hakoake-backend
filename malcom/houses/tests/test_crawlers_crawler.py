@@ -383,3 +383,79 @@ class TestCrawlerStateManagement(TestCase):
         # State should be FAILED due to exception handling in run()
         website.refresh_from_db()
         self.assertEqual(website.state, WebsiteProcessingState.FAILED)
+
+
+class TestIsValidPerformerNameJunkPatterns(TestCase):
+    """Test new junk rejection patterns in _is_valid_performer_name."""
+
+    def setUp(self):
+        self.website = LiveHouseWebsite.objects.create(
+            url="https://test.example.com",
+            state=WebsiteProcessingState.NOT_STARTED,
+            crawler_class="LoftProjectShelterCrawler",
+        )
+        self.crawler = LoftProjectShelterCrawler(self.website)
+
+    def test_rejects_url(self):
+        self.assertFalse(self.crawler._is_valid_performer_name("https://example.com/band"))
+
+    def test_rejects_html_extension(self):
+        self.assertFalse(self.crawler._is_valid_performer_name("schedule.html"))
+
+    def test_rejects_php_extension(self):
+        self.assertFalse(self.crawler._is_valid_performer_name("event.php"))
+
+    def test_rejects_path_like_string(self):
+        self.assertFalse(self.crawler._is_valid_performer_name("123/page"))
+
+    def test_rejects_bare_and_more(self):
+        self.assertFalse(self.crawler._is_valid_performer_name("and more..."))
+
+    def test_rejects_ticket_purchase_text(self):
+        self.assertFalse(self.crawler._is_valid_performer_name("チケット予約はこちら"))
+
+    def test_rejects_instrument_prefix(self):
+        self.assertFalse(self.crawler._is_valid_performer_name("Vocals：Taro"))
+
+    def test_rejects_food_prefix_fullwidth(self):
+        self.assertFalse(self.crawler._is_valid_performer_name("FOOD＞special menu"))
+
+    def test_accepts_anymore(self):
+        """'Anymore' is a valid band name, not 'and more'."""
+        self.assertTrue(self.crawler._is_valid_performer_name("Anymore"))
+
+    def test_accepts_valid_japanese_name(self):
+        self.assertTrue(self.crawler._is_valid_performer_name("東京スカパラダイスオーケストラ"))
+
+    def test_accepts_valid_english_name(self):
+        self.assertTrue(self.crawler._is_valid_performer_name("The Blue Hearts"))
+
+
+class TestCleanPerformerName(TestCase):
+    """Test BOM stripping and 'and more' suffix removal in _clean_performer_name."""
+
+    def setUp(self):
+        self.website = LiveHouseWebsite.objects.create(
+            url="https://test.example.com",
+            state=WebsiteProcessingState.NOT_STARTED,
+            crawler_class="LoftProjectShelterCrawler",
+        )
+        self.crawler = LoftProjectShelterCrawler(self.website)
+
+    def test_strips_bom(self):
+        self.assertEqual(self.crawler._clean_performer_name("\ufeffBand Name"), "Band Name")
+
+    def test_strips_and_more_suffix(self):
+        self.assertEqual(self.crawler._clean_performer_name("Band A and more"), "Band A")
+
+    def test_strips_and_more_with_ellipsis(self):
+        self.assertEqual(self.crawler._clean_performer_name("Band A...and more"), "Band A")
+
+    def test_strips_and_more_with_unicode_ellipsis(self):
+        self.assertEqual(self.crawler._clean_performer_name("Band A…and more guests"), "Band A")
+
+    def test_strips_and_more_case_insensitive(self):
+        self.assertEqual(self.crawler._clean_performer_name("Band A AND MORE"), "Band A")
+
+    def test_preserves_normal_name(self):
+        self.assertEqual(self.crawler._clean_performer_name("Band Anymore"), "Band Anymore")

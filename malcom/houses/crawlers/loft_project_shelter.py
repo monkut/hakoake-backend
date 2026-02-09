@@ -91,30 +91,6 @@ class LoftProjectShelterCrawler(LiveHouseWebsiteCrawler):
                     info["opened_date"] = f"{year}-{month:02d}-01"
                     break
 
-    def find_schedule_link(self, html_content: str) -> str | None:
-        """Find the link to the schedule page on Loft Project site."""
-        soup = self.create_soup(html_content)
-
-        # The URL already points to the schedule page
-        if "/schedule/" in self.website.url:
-            return self.website.url
-
-        # Look for schedule link
-        schedule_links = soup.find_all("a", href=re.compile(r"/schedule/"))
-        for link in schedule_links:
-            href = link.get("href")
-            if href:
-                return urljoin(self.website.url, href)
-
-        # Alternative text-based search
-        schedule_text_links = soup.find_all("a", text=re.compile(r"スケジュール|schedule|ライブ", re.IGNORECASE))
-        for link in schedule_text_links:
-            href = link.get("href")
-            if href:
-                return urljoin(self.website.url, href)
-
-        return self.website.url  # Assume current page has schedule
-
     def extract_performance_schedules(self, html_content: str) -> list[dict]:  # noqa: C901, PLR0912, PLR0915, PLR0911
         """Extract performance schedules from Loft Project Shelter schedule page."""
         soup = self.create_soup(html_content)

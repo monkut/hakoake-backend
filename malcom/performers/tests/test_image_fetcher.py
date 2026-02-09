@@ -4,8 +4,8 @@ from unittest.mock import MagicMock, patch
 
 from django.test import TestCase
 
-from .image_fetcher import PerformerImageFetcher
-from .models import Performer
+from performers.image_fetcher import PerformerImageFetcher
+from performers.models import Performer
 
 
 class PerformerImageFetcherTestCase(TestCase):
@@ -82,7 +82,6 @@ class PerformerImageFetcherTestCase(TestCase):
             name_kana="テストアーティスト",
             name_romaji="Test Artist",
         )
-        performer._skip_youtube_search = True  # Skip YouTube search in tests
         performer._skip_image_fetch = True  # Skip automatic image fetch in save
         performer.save()
 
@@ -129,7 +128,6 @@ class PerformerImageIntegrationTestCase(TestCase):
             name_kana="オートフェッチアーティスト",
             name_romaji="Auto Fetch Artist",
         )
-        performer._skip_youtube_search = True  # Skip YouTube search in tests
         performer.save()
 
         # Reload from database
@@ -146,7 +144,6 @@ class PerformerImageIntegrationTestCase(TestCase):
             name_kana="スキップフェッチアーティスト",
             name_romaji="Skip Fetch Artist",
         )
-        performer._skip_youtube_search = True
         performer._skip_image_fetch = True
         performer.save()
 

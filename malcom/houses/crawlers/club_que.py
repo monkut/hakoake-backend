@@ -23,11 +23,6 @@ class ClubQueCrawler(LiveHouseWebsiteCrawler):
     - Performer extraction from event content
     """
 
-    def find_schedule_link(self, html_content: str) -> str | None:
-        """Find the schedule link for Club Que website."""
-        # Club Que's schedule is at /schedule/
-        return urljoin(self.base_url, "/schedule/")
-
     def extract_performance_schedules(self, html_content: str) -> list[dict]:  # noqa: C901, PLR0912, PLR0915, PLR0911
         """
         Extract performance schedules from Club Que's website.

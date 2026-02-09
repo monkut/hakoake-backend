@@ -27,38 +27,6 @@ class ShinjukuMarbleCrawler(LiveHouseWebsiteCrawler):
     - Ticket information (前売り/当日 prices)
     """
 
-    def find_schedule_link(self, html_content: str) -> str | None:
-        """Find the schedule link for Shinjuku Marble website."""
-        soup = self.create_soup(html_content)
-
-        # Direct schedule URLs for Shinjuku Marble
-        schedule_urls = [
-            "/schedule/",
-            "/calender/",
-        ]
-
-        for url in schedule_urls:
-            schedule_link = soup.find("a", href=re.compile(url, re.IGNORECASE))
-            if schedule_link:
-                return urljoin(self.base_url, schedule_link["href"])
-
-        # Look for schedule-related links
-        schedule_patterns = ["schedule", "スケジュール", "calender", "カレンダー", "event", "イベント"]
-
-        for pattern in schedule_patterns:
-            # Check links with matching text
-            schedule_link = soup.find("a", text=re.compile(pattern, re.IGNORECASE))
-            if schedule_link and schedule_link.get("href"):
-                return urljoin(self.base_url, schedule_link["href"])
-
-            # Check links with matching href
-            schedule_link = soup.find("a", href=re.compile(pattern, re.IGNORECASE))
-            if schedule_link and schedule_link.get("href"):
-                return urljoin(self.base_url, schedule_link["href"])
-
-        # Default to /schedule/
-        return urljoin(self.base_url, "/schedule/")
-
     def extract_performance_schedules(self, html_content: str) -> list[dict]:  # noqa: C901
         """
         Extract performance schedules from Shinjuku Marble's website.

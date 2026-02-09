@@ -167,19 +167,6 @@ class Performer(TimestampedModel):
         is_new = self.pk is None
         super().save(*args, **kwargs)
 
-        # For new instances, search for YouTube videos
-        if is_new and not hasattr(self, "_skip_youtube_search"):
-            try:
-                from .youtube_search import search_and_create_performer_songs  # noqa: PLC0415
-
-                search_and_create_performer_songs(self)
-            except Exception as e:  # noqa: BLE001
-                # Don't fail performer creation if YouTube search fails
-                import logging  # noqa: PLC0415
-
-                logger = logging.getLogger(__name__)
-                logger.warning(f"Failed to search YouTube for {self.name}: {str(e)}")
-
         # For new instances, fetch performer images
         if is_new and not hasattr(self, "_skip_image_fetch"):
             try:

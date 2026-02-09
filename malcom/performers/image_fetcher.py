@@ -18,11 +18,15 @@ logger = logging.getLogger(__name__)
 
 
 class PerformerImageFetcher:
-    """Fetches performer images and logos from TheAudioDB API."""
+    """Fetches performer images and logos from TheAudioDB API with MusicBrainz fallback."""
 
     # TheAudioDB API (free tier)
     TADB_API_KEY = "2"  # Public test key
     TADB_SEARCH_URL = "https://www.theaudiodb.com/api/v1/json/{api_key}/search.php"
+
+    # MusicBrainz API
+    MB_SEARCH_URL = "https://musicbrainz.org/ws/2/artist/"
+    MB_HEADERS = {"User-Agent": "PerformerImageFetcher/1.0"}
 
     def __init__(self) -> None:
         """Initialize the fetcher with a requests session."""
@@ -65,6 +69,44 @@ class PerformerImageFetcher:
             logger.exception(f"Error searching TheAudioDB for {artist_name}")
             return {}
 
+    def search_musicbrainz(self, artist_name: str) -> dict[str, str | None]:
+        """
+        Search MusicBrainz for artist information as a fallback.
+
+        MusicBrainz provides artist confirmation and MBID but no direct image links.
+
+        Args:
+            artist_name: Name of the artist to search for
+
+        Returns:
+            Dictionary with artist name, MBID, and score, or empty dict
+        """
+        try:
+            params = {"query": f'artist:"{artist_name}"', "fmt": "json", "limit": 1}
+
+            logger.debug(f"Searching MusicBrainz for artist: {artist_name}")
+            response = self.session.get(self.MB_SEARCH_URL, params=params, headers=self.MB_HEADERS, timeout=10)
+            response.raise_for_status()
+
+            data = response.json()
+            if data.get("artists") and len(data["artists"]) > 0:
+                artist = data["artists"][0]
+                logger.info(
+                    f"Found {artist.get('name')} on MusicBrainz "
+                    f"(MBID: {artist.get('id')}, score: {artist.get('score')})"
+                )
+                return {
+                    "name": artist.get("name"),
+                    "mbid": artist.get("id"),
+                    "score": artist.get("score"),
+                }
+            logger.debug(f"Artist {artist_name} not found on MusicBrainz")
+            return {}  # noqa: TRY300
+
+        except Exception:  # noqa: BLE001
+            logger.exception(f"Error searching MusicBrainz for {artist_name}")
+            return {}
+
     def download_image_content(self, url: str) -> bytes | None:
         """
         Download image content from a URL.
@@ -97,6 +139,33 @@ class PerformerImageFetcher:
         else:
             return image_bytes
 
+    # Mapping from TheAudioDB response keys to (model field, default extension)
+    IMAGE_FIELD_MAP: list[tuple[str, str, str]] = [
+        ("thumb", "performer_image", "jpg"),
+        ("logo", "logo_image", "png"),
+        ("fanart", "fanart_image", "jpg"),
+        ("banner", "banner_image", "jpg"),
+    ]
+
+    def _save_image_to_field(self, performer: "Performer", field_name: str, url: str, extension: str) -> bool:
+        """Download an image and save it to a performer's ImageField."""
+        image_bytes = self.download_image_content(url)
+        if not image_bytes:
+            return False
+
+        try:
+            # For logo, detect extension from URL
+            if field_name == "logo_image" and ".png" not in url.lower():
+                extension = "jpg"
+            filename = f"{performer.name}_{field_name}.{extension}"
+            getattr(performer, field_name).save(filename, ContentFile(image_bytes), save=False)
+            logger.info(f"Saved {field_name} for {performer.name}")
+        except Exception:  # noqa: BLE001
+            logger.exception(f"Failed to save {field_name} for {performer.name}")
+            return False
+        else:
+            return True
+
     def fetch_and_save_images(self, performer: "Performer") -> dict[str, bool]:
         """
         Fetch and save performer images to the Performer model.
@@ -107,41 +176,27 @@ class PerformerImageFetcher:
         Returns:
             Dictionary mapping image types to success status
         """
-        results = {"performer_image": False, "logo_image": False}
+        results = {field: False for _, field, _ in self.IMAGE_FIELD_MAP}
 
         # Search TheAudioDB for artist data
         artist_data = self.search_theaudiodb(performer.name)
 
         if not artist_data:
-            logger.debug(f"No image data found for {performer.name}")
+            # Fallback to MusicBrainz for artist confirmation
+            mb_data = self.search_musicbrainz(performer.name)
+            if mb_data:
+                logger.info(
+                    f"MusicBrainz confirmed artist {mb_data.get('name')} "
+                    f"(MBID: {mb_data.get('mbid')}), but no images available"
+                )
+            else:
+                logger.debug(f"No image data found for {performer.name}")
             return results
 
-        # Download and save performer image (thumb)
-        if artist_data.get("thumb"):
-            image_bytes = self.download_image_content(artist_data["thumb"])
-            if image_bytes:
-                try:
-                    # Save to Django ImageField
-                    filename = f"{performer.name}_image.jpg"
-                    performer.performer_image.save(filename, ContentFile(image_bytes), save=False)
-                    results["performer_image"] = True
-                    logger.info(f"Saved performer image for {performer.name}")
-                except Exception:  # noqa: BLE001
-                    logger.exception(f"Failed to save performer image for {performer.name}")
-
-        # Download and save logo image
-        if artist_data.get("logo"):
-            logo_bytes = self.download_image_content(artist_data["logo"])
-            if logo_bytes:
-                try:
-                    # Determine extension from URL or default to png
-                    extension = "png" if ".png" in artist_data["logo"].lower() else "jpg"
-                    filename = f"{performer.name}_logo.{extension}"
-                    performer.logo_image.save(filename, ContentFile(logo_bytes), save=False)
-                    results["logo_image"] = True
-                    logger.info(f"Saved logo image for {performer.name}")
-                except Exception:  # noqa: BLE001
-                    logger.exception(f"Failed to save logo image for {performer.name}")
+        for api_key, field_name, extension in self.IMAGE_FIELD_MAP:
+            url = artist_data.get(api_key)
+            if url:
+                results[field_name] = self._save_image_to_field(performer, field_name, url, extension)
 
         return results
 
@@ -158,10 +213,12 @@ def fetch_and_update_performer_images(performer: "Performer") -> dict[str, bool]
     Returns:
         Dictionary mapping image types to success status
     """
-    # Skip if performer already has both images
-    if performer.performer_image and performer.logo_image:
-        logger.debug(f"Performer {performer.name} already has images")
-        return {"performer_image": True, "logo_image": True}
+    image_fields = ["performer_image", "logo_image", "fanart_image", "banner_image"]
+
+    # Skip if performer already has all images
+    if all(getattr(performer, field) for field in image_fields):
+        logger.debug(f"Performer {performer.name} already has all images")
+        return dict.fromkeys(image_fields, True)
 
     fetcher = PerformerImageFetcher()
     results = fetcher.fetch_and_save_images(performer)
@@ -169,8 +226,7 @@ def fetch_and_update_performer_images(performer: "Performer") -> dict[str, bool]
     # Save the performer if any images were added
     if any(results.values()):
         try:
-            # Use update_fields to avoid triggering save hooks again
-            performer.save(update_fields=["performer_image", "logo_image"])
+            performer.save(update_fields=image_fields)
             logger.info(f"Updated performer {performer.name} with images")
         except Exception:  # noqa: BLE001
             logger.exception(f"Failed to save performer {performer.name} after updating images")

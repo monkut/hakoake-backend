@@ -7,6 +7,7 @@ from .definitions import CrawlerCollectionState, WebsiteProcessingState
 
 class LiveHouseWebsite(TimestampedModel):
     url = models.URLField(max_length=255, unique=True, blank=False, null=False)
+    schedule_url = models.URLField(max_length=255, blank=True, default="")
     state = models.CharField(
         choices=WebsiteProcessingState.choices(), default=WebsiteProcessingState.NOT_STARTED, max_length=20
     )

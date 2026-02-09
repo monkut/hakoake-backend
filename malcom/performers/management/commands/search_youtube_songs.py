@@ -75,9 +75,6 @@ class Command(BaseCommand):
             self.stdout.write(f"🔍 Searching YouTube for: {performer.name} (ID: {performer.id})")
 
             try:
-                # Set flag to skip YouTube search in save method to avoid duplicate searches
-                performer._skip_youtube_search = True
-
                 # Check if performer had YouTube link before
                 had_youtube_link = PerformerSocialLink.objects.filter(performer=performer, platform="youtube").exists()
 

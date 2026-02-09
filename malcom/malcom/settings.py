@@ -245,6 +245,7 @@ CSRF_USE_SESSIONS = bool(strtobool(os.getenv("DJANGO_CSRF_USE_SESSIONS", DEFAULT
 
 
 AUTHENTICATION_BACKENDS = ("django.contrib.auth.backends.ModelBackend",)
+LOGIN_URL = "/admin/login/"
 # AWS boto3 service endpoints
 DEFAULT_BOTO3_S3_SERVICE_ENDPOINT = f"https://s3.{AWS_REGION}.amazonaws.com"
 AWS_SERVICE_ENDPOINTS = {

@@ -194,9 +194,7 @@ def collect_schedules(venue_id: int | None = None) -> None:
 
         except Exception:  # noqa: BLE001
             failed_count += 1
-            logger.exception("❌ Failed to crawl {live_house_name}: {str(e)}")  # noqa: TRY401
-            logger.exception("   URL: {website.url}")
-            logger.exception("")  # Empty line for readability
+            logger.exception(f"❌ Failed to crawl {live_house_name} (URL: {website.url})")
 
             # The crawler should have already set the state to FAILED
             # but ensure it's set in case of unexpected errors

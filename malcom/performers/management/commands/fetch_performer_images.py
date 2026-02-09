@@ -60,7 +60,14 @@ class Command(BaseCommand):
         # Filter for missing images if requested
         if missing_only and not force:
             performers = performers.filter(
-                Q(performer_image="") | Q(performer_image__isnull=True) | Q(logo_image="") | Q(logo_image__isnull=True)
+                Q(performer_image="")
+                | Q(performer_image__isnull=True)
+                | Q(logo_image="")
+                | Q(logo_image__isnull=True)
+                | Q(fanart_image="")
+                | Q(fanart_image__isnull=True)
+                | Q(banner_image="")
+                | Q(banner_image__isnull=True)
             )
 
         total_count = performers.count()
@@ -79,10 +86,10 @@ class Command(BaseCommand):
 
             # Clear existing images if force is enabled
             if force:
-                if performer.performer_image:
-                    performer.performer_image.delete(save=False)
-                if performer.logo_image:
-                    performer.logo_image.delete(save=False)
+                for field_name in ("performer_image", "logo_image", "fanart_image", "banner_image"):
+                    field = getattr(performer, field_name)
+                    if field:
+                        field.delete(save=False)
 
             # Fetch and update images
             with transaction.atomic():
@@ -91,15 +98,11 @@ class Command(BaseCommand):
                 # Reload from database to get updated image fields
                 performer.refresh_from_db()
 
-                if results["performer_image"] and results["logo_image"]:
-                    self.stdout.write(self.style.SUCCESS("  ✓ Successfully fetched both images"))
+                fetched_types = [k for k, v in results.items() if v]
+                if len(fetched_types) == len(results):
+                    self.stdout.write(self.style.SUCCESS("  ✓ Successfully fetched all images"))
                     success_count += 1
-                elif results["performer_image"] or results["logo_image"]:
-                    fetched_types = []
-                    if results["performer_image"]:
-                        fetched_types.append("performer image")
-                    if results["logo_image"]:
-                        fetched_types.append("logo")
+                elif fetched_types:
                     self.stdout.write(self.style.WARNING(f"  ⚠ Partially successful: {', '.join(fetched_types)}"))
                     partial_count += 1
                 else:
