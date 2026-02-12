@@ -1,6 +1,8 @@
 import logging
 
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.db import IntegrityError
 from django.db.models import QuerySet
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
@@ -72,27 +74,33 @@ def verify_social_link_action(request: HttpRequest) -> HttpResponse:
     if action == "verify":
         # Save edited performer name if changed
         new_name = request.POST.get("performer_name", "").strip()
+        name_conflict = False
         if new_name and new_name != link.performer.name:
-            link.performer.name = new_name
-            link.performer.save()
-
-        # Save edited URL (user may have changed it) and mark as verified
-        new_url = request.POST.get("platform_url", "").strip()
-        if new_url:
-            link.url = new_url
-        link.is_label = request.POST.get("is_label") == "on"
-        link.verified_datetime = timezone.now()
-        link.save()
-
-        # Delete existing songs and re-search when a YouTube link is verified
-        if link.platform == "youtube":
             try:
-                link.performer.songs.all().delete()
-                search_and_create_performer_songs(link.performer)
-            except Exception:  # noqa: BLE001
-                logger.exception(f"Failed to search YouTube for {link.performer.name}")
+                link.performer.name = new_name
+                link.performer.save()
+            except IntegrityError:
+                messages.error(request, f"A performer named '{new_name}' already exists.")
+                name_conflict = True
 
-        # After verifying, show same index (next item will shift into this position)
+        if not name_conflict:
+            # Save edited URL (user may have changed it) and mark as verified
+            new_url = request.POST.get("platform_url", "").strip()
+            if new_url:
+                link.url = new_url
+            link.is_label = request.POST.get("is_label") == "on"
+            link.verified_datetime = timezone.now()
+            link.save()
+
+            # Delete existing songs and re-search when a YouTube link is verified
+            if link.platform == "youtube":
+                try:
+                    link.performer.songs.all().delete()
+                    search_and_create_performer_songs(link.performer)
+                except Exception:  # noqa: BLE001
+                    logger.exception(f"Failed to search YouTube for {link.performer.name}")
+
+        # After verifying (or conflict), show same index
         return redirect(f"/performers/verify/?index={current_index}")
 
     if action == "delete_social_link":
