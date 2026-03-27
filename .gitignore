@@ -233,3 +233,7 @@ LIVEHOUSE_ONBOARDING_SPEC.md
 LIVEHOUSE_SEARCH_202602.json
 malcom/staticfiles/
 malcom/staticfiles/*
+
+# Backups and session files
+*.bak
+CHECKPOINT.md
