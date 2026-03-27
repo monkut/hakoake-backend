@@ -120,7 +120,7 @@ WSGI_APPLICATION = "malcom.wsgi.application"  # noqa: N806
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "NAME": Path(os.getenv("SQLITE_DB_PATH", "/mnt/data/hakoake-backend/db.sqlite3")),
     }
 }
 
