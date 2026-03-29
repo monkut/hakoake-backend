@@ -271,6 +271,20 @@ REQUIRED_BUCKETS = (AWS_S3_DATA_BUCKETNAME,)
 # YouTube settings
 YOUTUBE_CHANNEL_URL = os.getenv("CHANNEL_URL", "")
 
+# Instagram settings (Instagram Login path — graph.instagram.com)
+INSTAGRAM_APP_ID = os.getenv("INSTAGRAM_APP_ID", "")
+INSTAGRAM_APP_SECRET = os.getenv("INSTAGRAM_APP_SECRET", "")
+INSTAGRAM_USER_ID = os.getenv("INSTAGRAM_USER_ID", "")  # populated after first OAuth run
+
+# Threads settings (shares Meta App with Instagram)
+THREADS_APP_ID = os.getenv("THREADS_APP_ID", INSTAGRAM_APP_ID)
+THREADS_APP_SECRET = os.getenv("THREADS_APP_SECRET", INSTAGRAM_APP_SECRET)
+THREADS_USER_ID = os.getenv("THREADS_USER_ID", "")  # populated after first OAuth run
+
+# Local OAuth server cert (generated via mkcert)
+OAUTH_LOCALHOST_CERT = BASE_DIR.parent / "localhost.pem"
+OAUTH_LOCALHOST_KEY = BASE_DIR.parent / "localhost-key.pem"
+
 PLAYLIST_INTRO_TEXT_GENERATION_MODEL = "mistral-small"
 
 # TTS Configuration for video generation

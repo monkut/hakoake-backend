@@ -226,6 +226,13 @@ notebooks/*.jpg
 
 client_secret.json
 secrets.json
+
+# mkcert local TLS certificates (generated via `mkcert localhost`)
+localhost.pem
+localhost-key.pem
+
+# OAuth token caches
+*_token.pickle
 malcom/data/*
 malcom/media/*
 token.pickle
