@@ -101,6 +101,47 @@ def update_youtube_playlist(playlist_id: str, title: str, description: str, clie
     logger.info(f"Updated YouTube playlist: {title} (ID: {playlist_id})")
 
 
+def list_playlist_items(playlist_id: str, client_secrets_file: Path) -> list[dict]:
+    """Return all items in a YouTube playlist as a list of dicts with 'playlist_item_id' and 'video_id'."""
+    youtube = get_authorized_youtube_client(client_secrets_file)
+    items = []
+    next_page_token = None
+    while True:
+        request = youtube.playlistItems().list(
+            part="snippet",
+            playlistId=playlist_id,
+            maxResults=50,
+            pageToken=next_page_token,
+        )
+        response = request.execute()
+        for item in response.get("items", []):
+            items.append(
+                {
+                    "playlist_item_id": item["id"],
+                    "video_id": item["snippet"]["resourceId"]["videoId"],
+                    "title": item["snippet"].get("title", ""),
+                }
+            )
+        next_page_token = response.get("nextPageToken")
+        if not next_page_token:
+            break
+    logger.info(f"Listed {len(items)} items in playlist {playlist_id}")
+    return items
+
+
+def remove_playlist_item(playlist_item_id: str, client_secrets_file: Path) -> bool:
+    """Remove a specific item from a YouTube playlist by its playlistItem ID."""
+    youtube = get_authorized_youtube_client(client_secrets_file)
+    try:
+        youtube.playlistItems().delete(id=playlist_item_id).execute()
+    except googleapiclient.errors.HttpError:
+        logger.exception(f"Failed to remove playlist item {playlist_item_id}")
+        return False
+    else:
+        logger.info(f"Removed playlist item {playlist_item_id}")
+        return True
+
+
 def add_video_to_playlist(playlist_id: str, video_id: str, client_secrets_file: Path) -> bool:
     """Add a video to a YouTube playlist."""
     youtube = get_authorized_youtube_client(client_secrets_file)

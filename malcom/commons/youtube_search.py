@@ -5,11 +5,10 @@ from datetime import timedelta
 from typing import TYPE_CHECKING
 
 import requests
-
-from .normalization import channel_name_matches
+from performers.normalization import channel_name_matches
 
 if TYPE_CHECKING:
-    from .models import Performer, PerformerSong
+    from performers.models import Performer, PerformerSong
 
 logger = logging.getLogger(__name__)
 
@@ -128,7 +127,7 @@ class YouTubeSearcher:
         bracketed_pattern = rf"[\[\(【「『]{re.escape(performer_lower)}[\]\)】」』]"
         return bool(re.search(bracketed_pattern, title_lower))
 
-    def _extract_video_data_from_html(self, html_content: str) -> list[dict]:
+    def _extract_video_data_from_html(self, html_content: str) -> list[dict]:  # noqa: C901, PLR0912
         """
         Extract video data from YouTube search results HTML.
 
@@ -183,9 +182,32 @@ class YouTubeSearcher:
                         browse_endpoint = channel_runs[0].get("navigationEndpoint", {}).get("browseEndpoint", {})
                         channel_id = browse_endpoint.get("browseId", "")
 
-                    # Extract duration
-                    duration_text = video.get("lengthText", {}).get("simpleText", "0:00")
+                    # Skip live streams — they have no fixed duration and would
+                    # otherwise get stored with a fake 0-second value.
+                    if self._is_live_video(video):
+                        logger.warning(
+                            f"Skipping live video: id={video_id!r} title={title!r} "
+                            f"lengthText={video.get('lengthText')!r}"
+                        )
+                        continue
+
+                    # Extract duration: try simpleText first, then accessibility label.
+                    # "simpleText" format: "15:30" or "1:23:45"
+                    # "label" format (Japanese): "15 分 30 秒" or "1 時間 26 分 5 秒"
+                    # lengthText may be JSON null (Python None) for non-live videos that
+                    # lack duration data — use `or {}` to guard against AttributeError.
+                    length_text_obj = video.get("lengthText") or {}
+                    duration_text = length_text_obj.get("simpleText", "")
+                    if not duration_text:
+                        duration_text = (
+                            length_text_obj.get("accessibility", {}).get("accessibilityData", {}).get("label", "")
+                        )
                     duration_seconds = self._parse_duration(duration_text)
+                    if duration_seconds == 0 and duration_text:
+                        logger.warning(
+                            f"Could not parse duration for video id={video_id!r} title={title!r}: "
+                            f"duration_text={duration_text!r} lengthText={length_text_obj!r}"
+                        )
 
                     # Extract view count
                     view_text = video.get("viewCountText", {}).get("simpleText", "0")
@@ -252,20 +274,64 @@ class YouTubeSearcher:
         except (ValueError, AttributeError):
             return 0
 
+    def _is_live_video(self, video: dict) -> bool:
+        """Return True if this video renderer represents a live stream or premiere.
+
+        Real payload observations (confirmed via confirm_yt_payload):
+        - Live streams:  lengthText=null, badges contain BADGE_STYLE_TYPE_LIVE_NOW,
+                         thumbnailOverlays is empty [].
+        - Shorts:        overlay style='SHORTS', very short durations (filtered naturally).
+        - Regular:       overlay style='DEFAULT', lengthText.simpleText present.
+
+        Primary detection is via badge style; overlay style is a secondary signal.
+        """
+        for badge in video.get("badges", []):
+            badge_style = badge.get("metadataBadgeRenderer", {}).get("style", "")
+            if "LIVE" in badge_style.upper():
+                return True
+        for overlay in video.get("thumbnailOverlays", []):
+            style = overlay.get("thumbnailOverlayTimeStatusRenderer", {}).get("style", "")
+            if style == "LIVE":
+                return True
+        return False
+
     def _parse_duration(self, duration_text: str) -> int:  # noqa: C901, PLR0912, PLR0915, PLR0911
-        """Parse duration text like '3:45' to seconds."""
-        try:
-            if ":" in duration_text:
+        """Parse duration text to seconds.
+
+        Handles two formats from ytInitialData:
+        - simpleText:  "3:45" (MM:SS) or "1:23:45" (HH:MM:SS)
+        - accessibility label: "3 minutes, 45 seconds" or "1 hour, 23 minutes, 45 seconds"
+
+        Returns 0 when the text is empty or cannot be parsed, so the caller can log and
+        exclude the video via the duration filters.
+        """
+        if not duration_text:
+            return 0
+        # MM:SS or HH:MM:SS
+        if ":" in duration_text:
+            try:
                 parts = duration_text.split(":")
-                if len(parts) == 2:  # noqa: PLR2004  # MM:SS
-                    minutes, seconds = int(parts[0]), int(parts[1])
-                    return minutes * 60 + seconds
-                if len(parts) == 3:  # noqa: PLR2004  # HH:MM:SS
-                    hours, minutes, seconds = int(parts[0]), int(parts[1]), int(parts[2])
-                    return hours * 3600 + minutes * 60 + seconds
-            return int(float(duration_text))  # If it's just a number
+                if len(parts) == 2:  # noqa: PLR2004
+                    return int(parts[0]) * 60 + int(parts[1])
+                if len(parts) == 3:  # noqa: PLR2004
+                    return int(parts[0]) * 3600 + int(parts[1]) * 60 + int(parts[2])
+            except ValueError:
+                return 0
+        # Accessibility label — English: "X hours, Y minutes, Z seconds"
+        # Accessibility label — Japanese: "X 時間 Y 分 Z 秒"  (confirmed via confirm_yt_payload)
+        hour_match = re.search(r"(\d+)\s*(?:hour|時間)", duration_text, re.IGNORECASE)
+        minute_match = re.search(r"(\d+)\s*(?:minute|分)", duration_text, re.IGNORECASE)
+        second_match = re.search(r"(\d+)\s*(?:second|秒)", duration_text, re.IGNORECASE)
+        if hour_match or minute_match or second_match:
+            hours = int(hour_match.group(1)) if hour_match else 0
+            minutes = int(minute_match.group(1)) if minute_match else 0
+            seconds = int(second_match.group(1)) if second_match else 0
+            return hours * 3600 + minutes * 60 + seconds
+        # Plain integer seconds
+        try:
+            return int(float(duration_text))
         except (ValueError, AttributeError):
-            return 30  # Default to 30 seconds if parsing fails
+            return 0
 
 
 def search_and_create_performer_songs(performer: "Performer") -> list["PerformerSong"]:
@@ -280,7 +346,7 @@ def search_and_create_performer_songs(performer: "Performer") -> list["Performer
     Returns:
         List of created PerformerSong instances
     """
-    from .models import PerformerSocialLink, PerformerSong  # noqa: PLC0415
+    from performers.models import PerformerSocialLink, PerformerSong  # noqa: PLC0415
 
     # Check if performer already has songs to avoid duplicates
     if performer.songs.filter(youtube_video_id__isnull=False).exclude(youtube_video_id="").exists():
