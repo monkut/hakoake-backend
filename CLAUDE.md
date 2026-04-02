@@ -8,7 +8,23 @@ Django project with SQLite database for collecting band performance data from li
 - **poethepoet** - Task runner (`uv run poe <task>`)
 - **pre-commit** - Git hooks
 - **ruff** - Linting/formatting
-- **pytest** - Testing
+- **Django test runner** - Testing (NOT pytest — `uv run poe test` runs `cd malcom && uv run python manage.py test --debug-mode`)
+
+## Development Commands
+
+All commands must be run from the **`malcom/`** subdirectory (where `manage.py` lives), or via `poe` tasks from the repo root.
+
+```bash
+# Run tests (from repo root)
+uv run poe test
+
+# Run a management command (from repo root)
+cd malcom && uv run python manage.py <command>
+
+# Lint/format (from repo root)
+uv run ruff check malcom/
+uv run ruff format malcom/
+```
 
 ## Crawler Development
 
@@ -19,7 +35,7 @@ Create crawlers in `houses/crawlers/` extending `houses.crawlers.LiveHouseWebsit
 
 ## Management Commands
 
-All commands: `uv run python manage.py <command>`
+All commands must be run from the `malcom/` directory: `cd malcom && uv run python manage.py <command>`
 
 ### Data Collection Workflow
 
