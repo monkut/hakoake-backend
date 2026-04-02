@@ -9,6 +9,7 @@ from .daisy_bar import DaisyBarCrawler
 from .rockmaykan import RockmaykanCrawler
 from .club_que import ClubQueCrawler
 from .garret import GarretCrawler
+from .fever_popo import FeverPopoCrawler
 
 __all__ = [
     "LiveHouseWebsiteCrawler",
@@ -23,4 +24,5 @@ __all__ = [
     "RockmaykanCrawler",
     "ClubQueCrawler",
     "GarretCrawler",
+    "FeverPopoCrawler",
 ]
