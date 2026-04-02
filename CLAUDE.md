@@ -26,6 +26,37 @@ uv run ruff check malcom/
 uv run ruff format malcom/
 ```
 
+## Git Workflow
+
+All source files live under `malcom/` — always include the prefix when staging:
+```bash
+git add malcom/commons/youtube_utils.py malcom/houses/management/commands/foo.py
+```
+
+`ellen-goc` does **not** have push access to `monkut/hakoake-backend`. Use the `fork` remote to push branches and open PRs:
+```bash
+git push fork <branch-name>
+gh pr create --repo monkut/hakoake-backend --head "ellen-goc:<branch-name>" --base main ...
+```
+
+## Testing Conventions
+
+This project uses `ruff` with `select = ["ALL"]`. Tests must follow these rules to pass pre-commit hooks:
+
+- **Mock parameters require type annotations** (ANN001): always annotate mock args as `MagicMock`
+  ```python
+  def test_foo(self, mock_upload: MagicMock, mock_get_client: MagicMock) -> None:
+  ```
+- **Hardcoded `/tmp/` paths** trigger S108 — suppress with `# noqa: S108`, or use `tempfile.NamedTemporaryFile`
+- **Methods with >6 `return` statements** trigger PLR0911 — suppress with `# noqa: PLR0911` on the `def` line
+
+## Django Shell Output
+
+`manage.py shell -c "..."` prints a startup line before the value (e.g. `19 objects imported automatically`). Always pipe through `tail -1` when capturing output:
+```bash
+value=$(uv run python manage.py shell -c "print(Model.objects.get(...).id)" | tail -1)
+```
+
 ## Crawler Development
 
 Create crawlers in `houses/crawlers/` extending `houses.crawlers.LiveHouseWebsiteCrawler`.
