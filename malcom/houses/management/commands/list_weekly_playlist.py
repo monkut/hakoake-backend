@@ -5,6 +5,7 @@ Shows performer, song, and performance live-houses/dates for each playlist entry
 """
 
 import datetime
+import json
 from argparse import ArgumentParser
 from datetime import timedelta
 
@@ -49,9 +50,15 @@ class Command(BaseCommand):
             default=None,
             help="Target week in YYYY-MM-DD format (must be a Monday, defaults to next week)",
         )
+        parser.add_argument(
+            "--json",
+            action="store_true",
+            help="Output playlist metadata as JSON (id, date, youtube_playlist_id, youtube_playlist_url)",
+        )
 
     def handle(self, *args, **options) -> None:  # noqa: ANN002, ANN003
         target_week_str = options.get("target_week")
+        output_json = options["json"]
 
         # Parse target week (defaults to next week)
         try:
@@ -66,6 +73,19 @@ class Command(BaseCommand):
         except WeeklyPlaylist.DoesNotExist:
             week_display = target_date.strftime("%Y-%m-%d")
             self.stdout.write(self.style.WARNING(f"No playlist found for week starting {week_display}."))
+            return
+
+        if output_json:
+            self.stdout.write(
+                json.dumps(
+                    {
+                        "id": playlist.id,
+                        "date": playlist.date.strftime("%Y-%m-%d"),
+                        "youtube_playlist_id": playlist.youtube_playlist_id,
+                        "youtube_playlist_url": playlist.youtube_playlist_url,
+                    }
+                )
+            )
             return
 
         week_start, week_end = get_week_boundaries(playlist.date)

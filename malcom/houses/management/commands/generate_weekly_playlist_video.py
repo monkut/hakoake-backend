@@ -2,6 +2,7 @@
 
 from pathlib import Path
 
+from commons.youtube_utils import insert_video_at_position, upload_video_to_youtube
 from django.core.management.base import BaseCommand, CommandParser
 from houses.functions import generate_weekly_playlist_video
 from houses.models import WeeklyPlaylist
@@ -21,11 +22,24 @@ class Command(BaseCommand):
             type=str,
             help="Path to UTF-8 text file containing pre-written introduction text",
         )
+        parser.add_argument(
+            "--secrets-file",
+            type=str,
+            default="../client_secret.json",
+            help="Path to Google OAuth secrets file (default: ../client_secret.json)",
+        )
+        parser.add_argument(
+            "--skip-update-playlist",
+            action="store_true",
+            help="Skip uploading the video to YouTube and inserting it into the playlist",
+        )
 
-    def handle(self, *args, **options) -> None:  # noqa: ANN002, ANN003
+    def handle(self, *args, **options) -> None:  # noqa: ANN002, ANN003, PLR0911
         """Generate and save playlist introduction video."""
         playlist_id = options["playlist_id"]
         intro_text_file = options.get("intro_text_file")
+        secrets_file = Path(options["secrets_file"])
+        skip_update_playlist = options["skip_update_playlist"]
 
         try:
             playlist = WeeklyPlaylist.objects.get(id=playlist_id)
@@ -57,6 +71,43 @@ class Command(BaseCommand):
         # Generate video
         video_filepath = generate_weekly_playlist_video(playlist, intro_text=intro_text)
 
-        # Output the result
         self.stdout.write(self.style.SUCCESS("\n=== Video Generated ===\n"))
         self.stdout.write(f"Video saved to: {video_filepath}")
+
+        if skip_update_playlist:
+            self.stdout.write("Skipping YouTube upload (--skip-update-playlist)")
+            return
+
+        if not playlist.youtube_playlist_id:
+            self.stderr.write(self.style.ERROR("Playlist has no youtube_playlist_id — cannot upload"))
+            return
+
+        if not secrets_file.exists():
+            self.stderr.write(self.style.ERROR(f"Secrets file not found: {secrets_file}"))
+            return
+
+        # Upload video to YouTube
+        week_str = playlist.date.strftime("%Y-%m-%d")
+        video_title = f"HAKKO-AKKEI WEEK {week_str} TOKYO Playlist Introduction"
+        video_description = (
+            f"Weekly playlist introduction for the week of {week_str}.\nPlaylist: {playlist.youtube_playlist_url}"
+        )
+
+        self.stdout.write(f"Uploading video to YouTube: {video_title}")
+        try:
+            video_id = upload_video_to_youtube(video_filepath, video_title, video_description, secrets_file)
+        except Exception as exc:  # noqa: BLE001
+            self.stderr.write(self.style.ERROR(f"Failed to upload video: {exc}"))
+            return
+
+        self.stdout.write(f"Uploaded video ID: {video_id}")
+
+        # Insert as first entry in the playlist
+        self.stdout.write(f"Inserting video at position 0 in playlist {playlist.youtube_playlist_id}...")
+        success = insert_video_at_position(playlist.youtube_playlist_id, video_id, 0, secrets_file)
+        if success:
+            self.stdout.write(
+                self.style.SUCCESS(f"Inserted intro video as first playlist entry: https://youtu.be/{video_id}")
+            )
+        else:
+            self.stderr.write(self.style.ERROR("Failed to insert video into playlist"))
