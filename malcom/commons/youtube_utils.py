@@ -7,6 +7,7 @@ from pathlib import Path
 import google_auth_oauthlib.flow
 import googleapiclient.discovery
 import googleapiclient.errors
+import googleapiclient.http
 from google.auth.transport.requests import Request
 
 logger = logging.getLogger(__name__)
@@ -139,6 +140,70 @@ def remove_playlist_item(playlist_item_id: str, client_secrets_file: Path) -> bo
         return False
     else:
         logger.info(f"Removed playlist item {playlist_item_id}")
+        return True
+
+
+def upload_video_to_youtube(
+    video_path: Path,
+    title: str,
+    description: str,
+    client_secrets_file: Path,
+    privacy_status: str = "public",
+) -> str:
+    """Upload a local video file to YouTube and return its video ID."""
+    youtube = get_authorized_youtube_client(client_secrets_file)
+
+    body = {
+        "snippet": {
+            "title": title,
+            "description": description,
+        },
+        "status": {
+            "privacyStatus": privacy_status,
+        },
+    }
+
+    media = googleapiclient.http.MediaFileUpload(str(video_path), chunksize=-1, resumable=True)
+    request = youtube.videos().insert(
+        part=",".join(body.keys()),
+        body=body,
+        media_body=media,
+    )
+
+    response = None
+    while response is None:
+        status, response = request.next_chunk()
+        if status:
+            logger.info(f"Upload progress: {int(status.progress() * 100)}%")
+
+    video_id = response["id"]
+    logger.info(f"Uploaded video: {title} (ID: {video_id})")
+    return video_id
+
+
+def insert_video_at_position(playlist_id: str, video_id: str, position: int, client_secrets_file: Path) -> bool:
+    """Insert a video at a specific (0-based) position in a YouTube playlist."""
+    youtube = get_authorized_youtube_client(client_secrets_file)
+
+    try:
+        youtube.playlistItems().insert(
+            part="snippet",
+            body={
+                "snippet": {
+                    "playlistId": playlist_id,
+                    "position": position,
+                    "resourceId": {
+                        "kind": "youtube#video",
+                        "videoId": video_id,
+                    },
+                },
+            },
+        ).execute()
+    except googleapiclient.errors.HttpError:
+        logger.exception(f"Failed to insert video {video_id} at position {position} in playlist {playlist_id}")
+        return False
+    else:
+        logger.info(f"Inserted video {video_id} at position {position} in playlist {playlist_id}")
         return True
 
 
