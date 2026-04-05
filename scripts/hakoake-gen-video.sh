@@ -29,4 +29,7 @@ playlist_db_id=$(uv run python manage.py list_weekly_playlist "$MONDAY" --json |
 echo "Generating weekly playlist video for playlist id=${playlist_db_id}..."
 uv run python manage.py generate_weekly_playlist_video "$playlist_db_id"
 
+echo "Posting weekly playlist announcement to Instagram..."
+uv run python manage.py post_weekly_playlist "$playlist_db_id"
+
 echo "Done."

@@ -23,7 +23,7 @@ from pathlib import Path
 from commons.functions import parse_week
 from commons.youtube_utils import add_video_to_playlist, create_youtube_playlist
 from django.conf import settings
-from django.core.management import BaseCommand, CommandParser, call_command
+from django.core.management import BaseCommand, CommandParser
 from django.db import transaction
 from django.db.models import F
 from django.utils import timezone
@@ -290,12 +290,3 @@ class Command(BaseCommand):
             self.style.SUCCESS(f"\n Successfully created weekly playlist: {youtube_playlist_id}"),
         )
         self.stdout.write(f"  YouTube URL: https://www.youtube.com/playlist?list={youtube_playlist_id}")
-
-        # Post carousel announcement to Instagram
-        self.stdout.write("\nPosting weekly playlist announcement to Instagram...")
-        call_command(
-            "post_weekly_playlist",
-            playlist_id=weekly_playlist.id,
-            stdout=self.stdout,
-            stderr=self.stderr,
-        )
