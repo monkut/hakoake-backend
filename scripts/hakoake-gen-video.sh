@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # hakoake-gen-video.sh — Generate weekly playlist video for hakoake.
 # Runs every Monday at 22:00 JST.
-# 1. Creates the weekly playlist for the current Monday
+# 1. Creates the weekly playlist for the current Monday (also posts Instagram carousel)
 # 2. Looks up the created playlist's DB id
 # 3. Generates the playlist video
 set -euo pipefail
@@ -28,8 +28,5 @@ playlist_db_id=$(uv run python manage.py list_weekly_playlist "$MONDAY" --json |
 
 echo "Generating weekly playlist video for playlist id=${playlist_db_id}..."
 uv run python manage.py generate_weekly_playlist_video "$playlist_db_id"
-
-echo "Posting weekly playlist announcement to Instagram..."
-uv run python manage.py post_weekly_playlist "$playlist_db_id"
 
 echo "Done."
