@@ -1,9 +1,11 @@
 """Post a weekly playlist announcement as a carousel.
 
 Carousel structure:
-  Slide 1      — cover: numbered performer list for the week
-  Slides 2k    — per-performer: event flyer image (or performer card fallback)
-  Slides 2k+1  — per-performer: QR code slide with metadata
+  Slide 1    — cover: numbered performer list for the week
+  Slides 2-N — per-performer: combined flyer + QR code overlay
+
+With 1 cover + 1 slide per performer, up to 9 performers fit in
+Instagram's 10-slide carousel limit.
 
 Usage:
     uv run python manage.py post_weekly_playlist
@@ -20,9 +22,9 @@ from datetime import timedelta
 from commons.instagram_images import (
     INSTAGRAM_HASHTAGS,
     _resize_to_square,
+    generate_combined_flyer_qr_slide,
     generate_performer_card,
     generate_playlist_cover,
-    generate_qr_slide,
 )
 from commons.instagram_post import build_caption, post_carousel
 from commons.instagram_utils import get_instagram_token
@@ -114,13 +116,12 @@ class Command(BaseCommand):
             self.stderr.write(self.style.ERROR("Playlist has no entries"))
             return
 
-        # The cover slide lists every performer (limited only by what fits visually);
-        # the per-performer flyer + QR pairs are truncated to stay under the IG carousel cap.
-        max_performers = (MAX_CAROUSEL_SLIDES - 1) // 2
+        # 1 cover + 1 combined slide per performer = max (MAX_CAROUSEL_SLIDES - 1) performers
+        max_performers = MAX_CAROUSEL_SLIDES - 1
         entries = all_entries[:max_performers]
         if len(all_entries) > max_performers:
             logger.warning(
-                "Playlist has %d entries; only first %d get flyer/QR slides (cover lists all) "
+                "Playlist has %d entries; only first %d get slides (cover lists all) "
                 "to stay within %d-slide carousel limit",
                 len(all_entries),
                 max_performers,
@@ -157,7 +158,7 @@ class Command(BaseCommand):
         self.stdout.write(f"Generated cover image ({len(cover_bytes):,} bytes)")
         images: list[tuple[bytes, str]] = [(cover_bytes, "cover.jpg")]
 
-        # --- Per-performer slides ---
+        # --- Per-performer combined slides (flyer + QR overlay) ---
         for entry in entries:
             performer = entry.song.performer
             pos = entry.position
@@ -173,7 +174,7 @@ class Command(BaseCommand):
                 .first()
             )
 
-            # Flyer slide
+            # Get flyer image bytes (event image or generated performer card)
             if schedule and schedule.event_image and schedule.event_image.name:
                 try:
                     with schedule.event_image.open("rb") as f:
@@ -199,17 +200,14 @@ class Command(BaseCommand):
                 )
                 flyer_bytes = generate_performer_card(performer, pos, all_schedules)
 
-            flyer_filename = f"flyer_{pos:02d}_{performer.name[:20].replace(' ', '_')}.jpg"
-            images.append((flyer_bytes, flyer_filename))
-            self.stdout.write(f"Generated flyer for {performer.name} ({len(flyer_bytes):,} bytes)")
-
-            # QR code slide
+            # Combine flyer + QR into a single slide
             qr_url = _get_qr_url(schedule)
             venue_name = schedule.live_house.name if schedule else ""
             event_name = schedule.performance_name if schedule else ""
             event_date = schedule.performance_date if schedule else week_start
 
-            qr_bytes = generate_qr_slide(
+            combined_bytes = generate_combined_flyer_qr_slide(
+                flyer_bytes=flyer_bytes,
                 url=qr_url,
                 position=pos,
                 performer_name=performer.name,
@@ -217,9 +215,9 @@ class Command(BaseCommand):
                 event_name=event_name,
                 event_date=event_date,
             )
-            qr_filename = f"qr_{pos:02d}_{performer.name[:20].replace(' ', '_')}.jpg"
-            images.append((qr_bytes, qr_filename))
-            self.stdout.write(f"Generated QR slide for {performer.name} ({len(qr_bytes):,} bytes)")
+            filename = f"slide_{pos:02d}_{performer.name[:20].replace(' ', '_')}.jpg"
+            images.append((combined_bytes, filename))
+            self.stdout.write(f"Generated combined slide for {performer.name} ({len(combined_bytes):,} bytes)")
 
         self.stdout.write(f"Total slides: {len(images)}")
 
