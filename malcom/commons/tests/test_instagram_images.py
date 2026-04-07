@@ -1,14 +1,17 @@
-"""Tests for the Instagram image generator's font handling.
+"""Tests for the Instagram image generator's font handling and combined slide generation.
 
 The historical bug: instagram_images.py hardcoded DejaVu Sans, which has zero
 Japanese coverage, so every kana/kanji rendered as .notdef tofu boxes. These
 tests assert that Japanese glyphs render with real (non-notdef) widths.
 """
 
+import io
+from datetime import date
+
 from django.test import TestCase
 from PIL import Image, ImageDraw, ImageFont
 
-from commons.instagram_images import _font
+from commons.instagram_images import IMG_H, IMG_W, _font, generate_combined_flyer_qr_slide
 
 JAPANESE_SAMPLE = "残響のリフレイン"
 LATIN_SAMPLE = "HAKKO-AKKEI"
@@ -58,3 +61,60 @@ class TestFontFallback(TestCase):
         regular = _font(40, bold=False)
         self.assertIsNotNone(bold)
         self.assertIsNotNone(regular)
+
+
+def _make_dummy_flyer_bytes() -> bytes:
+    """Create a minimal JPEG image to use as a flyer input."""
+    img = Image.new("RGB", (800, 600), (100, 50, 150))
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG", quality=85)
+    return buf.getvalue()
+
+
+class TestCombinedFlyerQrSlide(TestCase):
+    def test_returns_valid_jpeg(self) -> None:
+        """The combined slide must return loadable JPEG bytes."""
+        result = generate_combined_flyer_qr_slide(
+            flyer_bytes=_make_dummy_flyer_bytes(),
+            url="https://example.com/event/1",
+            position=3,
+            performer_name="残響のリフレイン",
+            venue_name="下北沢SHELTER",
+            event_name="Spring Live 2026",
+            event_date=date(2026, 4, 15),
+        )
+        self.assertIsInstance(result, bytes)
+        self.assertGreater(len(result), 1000)
+        img = Image.open(io.BytesIO(result))
+        self.assertEqual(img.size, (IMG_W, IMG_H))
+
+    def test_renders_without_event_name(self) -> None:
+        """Combined slide must not crash when event_name is empty."""
+        result = generate_combined_flyer_qr_slide(
+            flyer_bytes=_make_dummy_flyer_bytes(),
+            url="https://example.com",
+            position=1,
+            performer_name="TestBand",
+            venue_name="Shibuya WWW",
+            event_name="",
+            event_date=date(2026, 4, 10),
+        )
+        self.assertIsInstance(result, bytes)
+        self.assertGreater(len(result), 1000)
+
+    def test_renders_with_non_square_flyer(self) -> None:
+        """Non-square flyer images should be scaled/cropped to 1080x1080."""
+        wide_img = Image.new("RGB", (1920, 1080), (200, 100, 50))
+        buf = io.BytesIO()
+        wide_img.save(buf, format="JPEG")
+        result = generate_combined_flyer_qr_slide(
+            flyer_bytes=buf.getvalue(),
+            url="https://example.com",
+            position=5,
+            performer_name="WideImage Band",
+            venue_name="Shinjuku LOFT",
+            event_name="Wide Show",
+            event_date=date(2026, 5, 1),
+        )
+        img = Image.open(io.BytesIO(result))
+        self.assertEqual(img.size, (IMG_W, IMG_H))

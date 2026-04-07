@@ -444,3 +444,94 @@ def generate_qr_slide(
     )
 
     return _to_jpeg(img)
+
+
+def generate_combined_flyer_qr_slide(
+    flyer_bytes: bytes,
+    url: str,
+    position: int,
+    performer_name: str,
+    venue_name: str,
+    event_name: str,
+    event_date: date,
+) -> bytes:
+    """Generate a combined flyer + QR code slide. Returns JPEG bytes.
+
+    The flyer image fills the background. A QR code with metadata is overlaid
+    in the bottom-right quadrant on a semi-transparent panel. The position badge
+    sits in the top-left corner.
+
+    Args:
+        flyer_bytes: Raw flyer image bytes (JPEG/PNG)
+        url: QR code target URL
+        position: Performer position index in the playlist
+        performer_name: Performer name
+        venue_name: Live house name
+        event_name: PerformanceSchedule.performance_name
+        event_date: PerformanceSchedule.performance_date
+    """
+    # --- Background: flyer image scaled to fill ---
+    flyer_img = Image.open(io.BytesIO(flyer_bytes)).convert("RGB")
+    img = _scale_to_fill(flyer_img)
+
+    # --- Top accent bar ---
+    draw = ImageDraw.Draw(img)
+    draw.rectangle([(0, 0), (IMG_W, 6)], fill=ACCENT_COLOR)
+
+    # --- Position badge (top-left) ---
+    draw.ellipse([(30, 20), (30 + 60, 20 + 60)], fill=ACCENT_COLOR)
+    draw.text((60, 50), str(position), font=_font(32, bold=True), fill=TEXT_COLOR, anchor="mm")
+
+    # --- QR overlay panel (bottom portion) ---
+    panel_h = 320
+    panel_y = IMG_H - panel_h
+    panel = Image.new("RGBA", (IMG_W, panel_h), (20, 20, 30, 210))
+    img_rgba = img.convert("RGBA")
+    img_rgba.paste(panel, (0, panel_y), panel)
+    img = img_rgba.convert("RGB")
+    draw = ImageDraw.Draw(img)
+
+    # QR code (left side of panel)
+    qr_size = 250
+    qr_img = generate_qr_code(url, qr_size)
+    qr_x = 40
+    qr_y = panel_y + (panel_h - qr_size) // 2
+    img.paste(qr_img, (qr_x, qr_y))
+
+    # Metadata (right side of panel, next to QR)
+    text_x = qr_x + qr_size + 30
+    text_y = panel_y + 24
+
+    # Performer name
+    font_name = _font(38, bold=True)
+    draw.text((text_x, text_y), performer_name, font=font_name, fill=TEXT_COLOR, anchor="lt")
+    text_y += 48
+
+    # Venue
+    font_detail = _font(28)
+    draw.text((text_x, text_y), venue_name, font=font_detail, fill=SECONDARY_COLOR, anchor="lt")
+    text_y += 38
+
+    # Event name (if set)
+    if event_name:
+        font_event = _font(24)
+        max_text_w = IMG_W - text_x - 30
+        lines = _text_wrapped(draw, event_name, font_event, max_text_w)
+        for line in lines[:2]:
+            draw.text((text_x, text_y), line, font=font_event, fill=DIM_COLOR, anchor="lt")
+            text_y += 32
+
+    # Event date
+    font_date = _font(30, bold=True)
+    draw.text(
+        (text_x, text_y),
+        event_date.strftime("%Y-%m-%d (%a)"),
+        font=font_date,
+        fill=ACCENT_COLOR,
+        anchor="lt",
+    )
+
+    # --- Bottom accent bar ---
+    draw.rectangle([(0, IMG_H - 6), (IMG_W, IMG_H)], fill=ACCENT_COLOR)
+
+    return _to_jpeg(img)
