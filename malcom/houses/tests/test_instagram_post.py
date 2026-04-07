@@ -78,14 +78,19 @@ class TestPostCarousel(TestCase):
         return images
 
     @patch("commons.instagram_post.publish_media", return_value="post_123")
+    @patch("commons.instagram_post.wait_for_container_finished", return_value=None)
     @patch("commons.instagram_post.create_carousel_container", return_value="container_99")
     @patch("commons.instagram_post.create_carousel_item", side_effect=["child_1", "child_2"])
-    @patch("commons.instagram_post.upload_image", side_effect=["handle_1", "handle_2"])
+    @patch(
+        "commons.instagram_post.upload_to_catbox",
+        side_effect=["https://files.catbox.moe/a.jpg", "https://files.catbox.moe/b.jpg"],
+    )
     def test_full_flow_returns_post_id(
         self,
         mock_upload: MagicMock,
         mock_item: MagicMock,
         mock_container: MagicMock,
+        mock_wait: MagicMock,
         mock_publish: MagicMock,
     ) -> None:
         images = self._make_images(2)
