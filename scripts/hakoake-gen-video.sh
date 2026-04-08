@@ -20,17 +20,19 @@ LOGFILE="$LOG_DIR/hakoake-gen-video-${MONDAY}.log"
 # Tee all output (stdout + stderr) to a dated log file
 exec > >(tee "$LOGFILE") 2>&1
 
+ENV_FILE="$HOME/projects/hakoake-backend/.env"
+
 echo "Creating weekly playlist for week starting ${MONDAY}..."
 cd "$HAKOAKE_DIR"
-uv run python manage.py create_weekly_playlist "$MONDAY"
+uv run --env-file "$ENV_FILE" python manage.py create_weekly_playlist "$MONDAY"
 
 echo "Looking up playlist DB id for ${MONDAY}..."
-playlist_db_id=$(uv run python manage.py list_weekly_playlist "$MONDAY" --json | jq -r '.id')
+playlist_db_id=$(uv run --env-file "$ENV_FILE" python manage.py list_weekly_playlist "$MONDAY" --json | jq -r '.id')
 
 echo "Generating weekly playlist video for playlist id=${playlist_db_id}..."
-uv run python manage.py generate_weekly_playlist_video "$playlist_db_id"
+uv run --env-file "$ENV_FILE" python manage.py generate_weekly_playlist_video "$playlist_db_id"
 
 echo "Posting weekly playlist announcement to Instagram..."
-uv run python manage.py post_weekly_playlist --playlist-id="$playlist_db_id"
+uv run --env-file "$ENV_FILE" python manage.py post_weekly_playlist --playlist-id="$playlist_db_id"
 
 echo "Done."
