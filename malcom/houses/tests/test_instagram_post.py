@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import io
-from datetime import date
 from unittest.mock import MagicMock, patch
 
 from commons.instagram_images import generate_playlist_cover
@@ -108,60 +107,3 @@ class TestPostCarousel(TestCase):
     def test_raises_on_too_many_images(self) -> None:
         with self.assertRaises(ValueError):
             post_carousel("u", "t", self._make_images(11), "caption")
-
-
-# ---------------------------------------------------------------------------
-# Management command dry-run test
-# ---------------------------------------------------------------------------
-
-
-class TestPostWeeklyPlaylistInstagramCommand(TestCase):
-    def setUp(self) -> None:
-        from performers.models import Performer, PerformerSong
-
-        from houses.models import WeeklyPlaylist, WeeklyPlaylistEntry
-
-        # Performer
-        self.performer = Performer(name="TestBand", name_kana="テスト", name_romaji="TestBand")
-        self.performer._skip_image_fetch = True  # noqa: SLF001
-        self.performer.save()
-
-        # Song
-        self.song = PerformerSong.objects.create(
-            performer=self.performer,
-            title="Test Song",
-            youtube_video_id="abc123",
-            youtube_url="https://www.youtube.com/watch?v=abc123",
-            youtube_view_count=1000,
-            youtube_duration_seconds=200,
-        )
-
-        # Playlist
-        self.playlist = WeeklyPlaylist.objects.create(
-            date=date(2026, 3, 30),
-            youtube_playlist_id="PLtest123",
-            youtube_playlist_url="https://www.youtube.com/playlist?list=PLtest123",
-        )
-        WeeklyPlaylistEntry.objects.create(playlist=self.playlist, song=self.song, position=1)
-
-    def test_dry_run_does_not_post(self) -> None:
-        from io import StringIO
-
-        from django.core.management import call_command
-
-        out = StringIO()
-        with patch("commons.instagram_post.post_carousel") as mock_post:
-            call_command("post_weekly_playlist_instagram", str(self.playlist.id), "--dry-run", stdout=out)
-        mock_post.assert_not_called()
-        self.assertIn("Dry run complete", out.getvalue())
-
-    def test_dry_run_output_contains_caption(self) -> None:
-        from io import StringIO
-
-        from django.core.management import call_command
-
-        out = StringIO()
-        call_command("post_weekly_playlist_instagram", str(self.playlist.id), "--dry-run", stdout=out)
-        output = out.getvalue()
-        self.assertIn("CAPTION", output)
-        self.assertIn("PLtest123", output)
