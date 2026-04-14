@@ -90,11 +90,17 @@ class Command(BaseCommand):
             action="store_true",
             help="Log images and caption without posting",
         )
+        parser.add_argument(
+            "--force",
+            action="store_true",
+            help="Bypass the instagram_post_id guard and re-post even if already posted",
+        )
 
-    def handle(self, *args, **options) -> None:  # noqa: ANN002, ANN003, PLR0912, PLR0915
+    def handle(self, *args, **options) -> None:  # noqa: ANN002, ANN003, C901, PLR0912, PLR0915
         playlist_id: int | None = options["playlist_id"]
         platform: str = options["platform"]
         dry_run: bool = options["dry_run"]
+        force: bool = options["force"]
 
         # --- Resolve playlist ---
         if playlist_id:
@@ -108,6 +114,16 @@ class Command(BaseCommand):
             if not playlist:
                 self.stderr.write(self.style.ERROR("No WeeklyPlaylist found"))
                 return
+
+        # Idempotency guard — skip when IG post already exists (unless forced or a dry-run).
+        if playlist.instagram_post_id and not dry_run and not force:
+            self.stdout.write(
+                self.style.SUCCESS(
+                    f"Playlist {playlist.id} already posted to instagram "
+                    f"(post_id={playlist.instagram_post_id}); skipping. Pass --force to re-post."
+                )
+            )
+            return
 
         all_entries = list(
             WeeklyPlaylistEntry.objects.filter(playlist=playlist).order_by("position").select_related("song__performer")
@@ -234,4 +250,8 @@ class Command(BaseCommand):
         key_file = settings.OAUTH_LOCALHOST_KEY
         handler = PLATFORM_HANDLERS[platform]
         post_id = handler(settings.INSTAGRAM_USER_ID, images, caption, cert_file, key_file)
+        # Persist immediately so a later crash cannot cause a re-post.
+        if platform == "instagram":
+            playlist.instagram_post_id = post_id
+            playlist.save(update_fields=["instagram_post_id"])
         self.stdout.write(self.style.SUCCESS(f"Posted to {platform}: post_id={post_id}"))

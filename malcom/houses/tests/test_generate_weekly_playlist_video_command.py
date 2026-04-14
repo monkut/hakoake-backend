@@ -7,6 +7,7 @@ from unittest.mock import MagicMock, patch
 
 from django.core.management import call_command
 from django.test import TestCase
+from django.utils import timezone
 
 from houses.models import WeeklyPlaylist
 
@@ -112,3 +113,127 @@ class TestGenerateWeeklyPlaylistVideoCommand(TestCase):
             )
 
         mock_insert.assert_not_called()
+
+    @patch("houses.management.commands.generate_weekly_playlist_video.insert_video_at_position")
+    @patch("houses.management.commands.generate_weekly_playlist_video.upload_video_to_youtube")
+    @patch("houses.management.commands.generate_weekly_playlist_video.generate_weekly_playlist_video")
+    def test_skips_when_upload_and_insert_already_recorded(
+        self, mock_gen: MagicMock, mock_upload: MagicMock, mock_insert: MagicMock
+    ) -> None:
+        """AC: already-uploaded-and-inserted playlist is a no-op."""
+        self.playlist.intro_youtube_video_id = "existing_vid"
+        self.playlist.intro_video_inserted_datetime = timezone.now()
+        self.playlist.save()
+
+        with tempfile.NamedTemporaryFile(suffix=".json") as tmp_secret:
+            call_command(
+                "generate_weekly_playlist_video",
+                str(self.playlist.id),
+                secrets_file=tmp_secret.name,
+            )
+
+        mock_gen.assert_not_called()
+        mock_upload.assert_not_called()
+        mock_insert.assert_not_called()
+
+    @patch("houses.management.commands.generate_weekly_playlist_video.insert_video_at_position")
+    @patch("houses.management.commands.generate_weekly_playlist_video.upload_video_to_youtube")
+    @patch("houses.management.commands.generate_weekly_playlist_video.generate_weekly_playlist_video")
+    def test_insert_only_when_upload_done_but_insert_missing(
+        self, mock_gen: MagicMock, mock_upload: MagicMock, mock_insert: MagicMock
+    ) -> None:
+        """AC: only insert is retried when upload already persisted."""
+        self.playlist.intro_youtube_video_id = "persisted_vid"
+        self.playlist.save()
+        mock_insert.return_value = True
+
+        with tempfile.NamedTemporaryFile(suffix=".json") as tmp_secret:
+            call_command(
+                "generate_weekly_playlist_video",
+                str(self.playlist.id),
+                secrets_file=tmp_secret.name,
+            )
+
+        mock_gen.assert_not_called()
+        mock_upload.assert_not_called()
+        mock_insert.assert_called_once()
+        insert_args = mock_insert.call_args[0]
+        self.assertEqual(insert_args[0], "PLtest123")
+        self.assertEqual(insert_args[1], "persisted_vid")
+        self.assertEqual(insert_args[2], 0)
+
+        self.playlist.refresh_from_db()
+        self.assertIsNotNone(self.playlist.intro_video_inserted_datetime)
+
+    @patch("houses.management.commands.generate_weekly_playlist_video.insert_video_at_position")
+    @patch("houses.management.commands.generate_weekly_playlist_video.upload_video_to_youtube")
+    @patch("houses.management.commands.generate_weekly_playlist_video.generate_weekly_playlist_video")
+    def test_force_reuploads_and_clears_prior_state(
+        self, mock_gen: MagicMock, mock_upload: MagicMock, mock_insert: MagicMock
+    ) -> None:
+        """AC: --force bypasses guards and clears prior intro fields before re-render."""
+        self.playlist.intro_youtube_video_id = "old_vid"
+        self.playlist.intro_video_inserted_datetime = timezone.now()
+        self.playlist.save()
+
+        with (
+            tempfile.NamedTemporaryFile(suffix=".mp4") as tmp_video,
+            tempfile.NamedTemporaryFile(suffix=".json") as tmp_secret,
+        ):
+            mock_gen.return_value = Path(tmp_video.name)
+            mock_upload.return_value = "new_vid"
+            mock_insert.return_value = True
+
+            call_command(
+                "generate_weekly_playlist_video",
+                str(self.playlist.id),
+                secrets_file=tmp_secret.name,
+                force=True,
+            )
+
+        mock_gen.assert_called_once()
+        mock_upload.assert_called_once()
+        mock_insert.assert_called_once()
+
+        self.playlist.refresh_from_db()
+        self.assertEqual(self.playlist.intro_youtube_video_id, "new_vid")
+        self.assertIsNotNone(self.playlist.intro_video_inserted_datetime)
+
+    @patch("houses.management.commands.generate_weekly_playlist_video.insert_video_at_position")
+    @patch("houses.management.commands.generate_weekly_playlist_video.upload_video_to_youtube")
+    @patch("houses.management.commands.generate_weekly_playlist_video.generate_weekly_playlist_video")
+    def test_intro_video_id_persisted_before_insert(
+        self, mock_gen: MagicMock, mock_upload: MagicMock, mock_insert: MagicMock
+    ) -> None:
+        """AC: intro_youtube_video_id is persisted immediately after upload returns.
+
+        Simulate an insert failure (via exception) and assert the id is still
+        saved — proving the save happened before insert was attempted.
+        """
+        captured: dict[str, str | None] = {"id_at_insert_time": None}
+
+        def _check_persisted(*_args: object, **_kwargs: object) -> bool:
+            self.playlist.refresh_from_db()
+            captured["id_at_insert_time"] = self.playlist.intro_youtube_video_id
+            raise RuntimeError("insert boom")
+
+        mock_insert.side_effect = _check_persisted
+
+        with (
+            tempfile.NamedTemporaryFile(suffix=".mp4") as tmp_video,
+            tempfile.NamedTemporaryFile(suffix=".json") as tmp_secret,
+        ):
+            mock_gen.return_value = Path(tmp_video.name)
+            mock_upload.return_value = "persisted_vid"
+
+            with self.assertRaises(RuntimeError):
+                call_command(
+                    "generate_weekly_playlist_video",
+                    str(self.playlist.id),
+                    secrets_file=tmp_secret.name,
+                )
+
+        self.assertEqual(captured["id_at_insert_time"], "persisted_vid")
+        self.playlist.refresh_from_db()
+        self.assertEqual(self.playlist.intro_youtube_video_id, "persisted_vid")
+        self.assertIsNone(self.playlist.intro_video_inserted_datetime)

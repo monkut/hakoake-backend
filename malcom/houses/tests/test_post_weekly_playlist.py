@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import date
 from io import StringIO
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from django.core.management import call_command
 from django.test import TestCase
@@ -102,3 +102,62 @@ class TestPostWeeklyPlaylistCommand(TestCase):
         call_command("post_weekly_playlist", "--dry-run", stdout=out)
         output = out.getvalue()
         self.assertIn(str(newer_playlist.id), output)
+
+    def test_skips_when_instagram_post_id_already_set(self) -> None:
+        """AC: already-posted playlist is a no-op."""
+        self.playlist.instagram_post_id = "existing_post_id"
+        self.playlist.save()
+
+        handler_mock = MagicMock(return_value="unused")
+        out = StringIO()
+        with patch(
+            "houses.management.commands.post_weekly_playlist.PLATFORM_HANDLERS",
+            {"instagram": handler_mock},
+        ):
+            call_command("post_weekly_playlist", f"--playlist-id={self.playlist.id}", stdout=out)
+
+        handler_mock.assert_not_called()
+        self.assertIn("already posted", out.getvalue())
+
+    def test_force_reposts_when_instagram_post_id_set(self) -> None:
+        """AC: --force bypasses the guard."""
+        self.playlist.instagram_post_id = "existing_post_id"
+        self.playlist.save()
+
+        handler_mock = MagicMock(return_value="new_post_id")
+        out = StringIO()
+        with (
+            patch(
+                "houses.management.commands.post_weekly_playlist.PLATFORM_HANDLERS",
+                {"instagram": handler_mock},
+            ),
+            patch("houses.management.commands.post_weekly_playlist.settings") as mock_settings,
+        ):
+            mock_settings.INSTAGRAM_USER_ID = "user123"
+            mock_settings.OAUTH_LOCALHOST_CERT = object()
+            mock_settings.OAUTH_LOCALHOST_KEY = object()
+            call_command("post_weekly_playlist", f"--playlist-id={self.playlist.id}", "--force", stdout=out)
+
+        handler_mock.assert_called_once()
+        self.playlist.refresh_from_db()
+        self.assertEqual(self.playlist.instagram_post_id, "new_post_id")
+
+    def test_instagram_post_id_persisted_immediately_after_post(self) -> None:
+        """AC: instagram_post_id is saved immediately after post_carousel returns."""
+        handler_mock = MagicMock(return_value="fresh_post_id")
+        out = StringIO()
+        with (
+            patch(
+                "houses.management.commands.post_weekly_playlist.PLATFORM_HANDLERS",
+                {"instagram": handler_mock},
+            ),
+            patch("houses.management.commands.post_weekly_playlist.settings") as mock_settings,
+        ):
+            mock_settings.INSTAGRAM_USER_ID = "user123"
+            mock_settings.OAUTH_LOCALHOST_CERT = object()
+            mock_settings.OAUTH_LOCALHOST_KEY = object()
+            call_command("post_weekly_playlist", f"--playlist-id={self.playlist.id}", stdout=out)
+
+        handler_mock.assert_called_once()
+        self.playlist.refresh_from_db()
+        self.assertEqual(self.playlist.instagram_post_id, "fresh_post_id")

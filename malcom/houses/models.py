@@ -151,6 +151,9 @@ class WeeklyPlaylist(TimestampedModel):
     youtube_playlist_id = models.CharField(max_length=100, blank=True, default="")
     youtube_playlist_url = models.URLField(max_length=500, blank=True, default="")
     youtube_channel_url = models.URLField(max_length=500, blank=True, default="")
+    intro_youtube_video_id = models.CharField(max_length=100, blank=True, default="")
+    intro_video_inserted_datetime = models.DateTimeField(null=True, blank=True)
+    instagram_post_id = models.CharField(max_length=100, blank=True, default="")
 
 
 class WeeklyPlaylistEntry(TimestampedModel):
