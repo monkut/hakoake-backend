@@ -326,6 +326,22 @@ class Command(BaseCommand):
             self.stderr.write(self.style.ERROR(f"Failed to create YouTube playlist: {e}"))
             return
 
+        # Persist the WeeklyPlaylist record immediately after the YouTube playlist
+        # is created. This narrows the orphan-window: if the process is killed
+        # during the per-song add loop below, the existence guard at the top of
+        # handle() will short-circuit on re-run instead of creating a second
+        # YouTube playlist.
+        youtube_playlist_url = f"https://www.youtube.com/playlist?list={youtube_playlist_id}"
+        channel_url = getattr(settings, "YOUTUBE_CHANNEL_URL", "")
+        with transaction.atomic():
+            weekly_playlist = WeeklyPlaylist.objects.create(
+                date=target_date,
+                youtube_playlist_id=youtube_playlist_id,
+                youtube_playlist_url=youtube_playlist_url,
+                youtube_channel_url=channel_url,
+            )
+        self.stdout.write(f"\nCreated WeeklyPlaylist for week starting {target_date.strftime('%Y-%m-%d')}")
+
         # Add songs to YouTube playlist (deduplicate by video_id)
         added_songs = []
         added_video_ids = set()
@@ -344,20 +360,9 @@ class Command(BaseCommand):
             self.stderr.write(self.style.ERROR("Failed to add any songs to YouTube playlist"))
             return
 
-        # Create database records and update playlist_weight
+        # Create entry records and update playlist_weight atomically so a partial
+        # failure does not leave half-populated entries.
         with transaction.atomic():
-            # Create WeeklyPlaylist
-            youtube_playlist_url = f"https://www.youtube.com/playlist?list={youtube_playlist_id}"
-            channel_url = getattr(settings, "YOUTUBE_CHANNEL_URL", "")
-
-            weekly_playlist = WeeklyPlaylist.objects.create(
-                date=target_date,
-                youtube_playlist_id=youtube_playlist_id,
-                youtube_playlist_url=youtube_playlist_url,
-                youtube_channel_url=channel_url,
-            )
-            self.stdout.write(f"\nCreated WeeklyPlaylist for week starting {target_date.strftime('%Y-%m-%d')}")
-
             # Create WeeklyPlaylistEntry records
             for position, (performer, song) in enumerate(added_songs, start=1):
                 WeeklyPlaylistEntry.objects.create(
