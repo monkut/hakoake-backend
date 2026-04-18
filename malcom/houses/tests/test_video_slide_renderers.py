@@ -11,6 +11,7 @@ from __future__ import annotations
 from datetime import date
 from types import SimpleNamespace
 
+from commons.design import brand_wash_canvas
 from django.test import TestCase
 from PIL import Image
 
@@ -117,3 +118,18 @@ class TestRenderVideoClosingSlide(TestCase):
             channel_url="https://www.youtube.com/@hakkoakkei",
         )
         self.assertEqual(img.size, VIDEO_SIZE)
+
+
+class TestBrandWashCanvasNoGrain(TestCase):
+    """Regression for hakoake-backend#52: brand_wash_canvas must not apply grain.
+
+    Frame-identical grain on consecutive video slides produced a frozen-texture
+    glitch. The canvas is deterministic (no grain) so this cannot recur.
+    """
+
+    def test_canvas_is_deterministic(self) -> None:
+        a = brand_wash_canvas((200, 200))
+        b = brand_wash_canvas((200, 200))
+        self.assertEqual(a.size, (200, 200))
+        self.assertEqual(a.mode, "RGB")
+        self.assertEqual(list(a.getdata()), list(b.getdata()))

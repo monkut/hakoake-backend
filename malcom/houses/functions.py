@@ -389,6 +389,51 @@ def apply_robotic_effects_to_audio(audio_path: Path) -> None:
     robotic_audio.export(str(audio_path), format="mp3", bitrate=settings.EDGE_TTS_BITRATE)
 
 
+def create_rgb_shift_effect(clip: ImageClip, shift_amount: int = 5) -> ImageClip:
+    """Apply RGB channel shift effect for a glitch look."""
+
+    def rgb_shift(get_frame, t):  # noqa: ANN001, ANN202
+        """Shift RGB channels to create chromatic aberration effect."""
+        frame = get_frame(t)
+        shifted = frame.copy()
+
+        # Shift red channel right
+        shifted[:, shift_amount:, 0] = frame[:, :-shift_amount, 0]
+        # Shift blue channel left
+        shifted[:, :-shift_amount, 2] = frame[:, shift_amount:, 2]
+
+        return shifted
+
+    return clip.transform(rgb_shift)
+
+
+def create_scanlines_effect(clip: ImageClip, line_height: int = 4, intensity: float = 0.3) -> ImageClip:
+    """Add horizontal scanline effect."""
+
+    def add_scanlines(get_frame, t):  # noqa: ANN001, ANN202
+        """Add horizontal scanlines to the frame."""
+        frame = get_frame(t).copy()
+        h, _w = frame.shape[:2]
+
+        # Create scanline mask
+        for y in range(0, h, line_height):
+            frame[y : y + 2] = frame[y : y + 2] * (1 - intensity)
+
+        return frame
+
+    return clip.transform(add_scanlines)
+
+
+def create_glitch_transition(last_frame_path: Path, duration: float = 0.1) -> ImageClip:
+    """Create a short glitch transition clip using the last frame of previous slide."""
+    base_clip = ImageClip(str(last_frame_path)).with_duration(duration)
+
+    glitched = create_rgb_shift_effect(base_clip, shift_amount=8)
+    glitched = create_scanlines_effect(glitched, line_height=3, intensity=0.4)
+
+    return glitched
+
+
 def _generate_introduction_text(  # noqa: C901, PLR0912, PLR0915
     playlist: MonthlyPlaylist | WeeklyPlaylist,
     entry_model: type[MonthlyPlaylistEntry] | type[WeeklyPlaylistEntry],
@@ -984,14 +1029,22 @@ def _generate_playlist_video(  # noqa: C901, PLR0915, PLR0912
 
             video_clips.append(clip)
 
-        logger.info(f"Created {len(video_clips)} video clips with individual audio tracks (hard cuts)")
+            if idx < len(slides) - 1:
+                glitch_clip = create_glitch_transition(slide_path, duration=0.1)
+                video_clips.append(glitch_clip)
+
+        logger.info(f"Created {len(video_clips)} video clips with individual audio tracks and glitch transitions")
 
     else:
-        for slide_path in slides:
+        for idx, slide_path in enumerate(slides):
             clip = ImageClip(str(slide_path)).with_duration(slide_duration)
             video_clips.append(clip)
 
-        logger.info(f"Created {len(video_clips)} video clips with fixed duration (hard cuts)")
+            if idx < len(slides) - 1:
+                glitch_clip = create_glitch_transition(slide_path, duration=0.1)
+                video_clips.append(glitch_clip)
+
+        logger.info(f"Created {len(video_clips)} video clips with fixed duration and glitch transitions")
 
     final_video = concatenate_videoclips(video_clips, method="compose")
 

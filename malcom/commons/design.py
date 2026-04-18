@@ -192,10 +192,10 @@ def load_brand_background(target_size: tuple[int, int]) -> Image.Image | None:
 
 
 def brand_wash_canvas(size: tuple[int, int]) -> Image.Image:
-    """Build the shared base canvas: brand bg photo + dark wash + paper grain.
+    """Build the shared base canvas: brand bg photo + dark wash.
 
-    Used by every video slide and by the Instagram playlist cover. Falls back
-    to a PAPER_BLACK canvas if the brand photo is unavailable.
+    Used by every video slide. Falls back to a PAPER_BLACK canvas if the
+    brand photo is unavailable.
     """
     base = load_brand_background(size)
     if base is None:
@@ -203,7 +203,7 @@ def brand_wash_canvas(size: tuple[int, int]) -> Image.Image:
     rgba = base.convert("RGBA")
     wash = Image.new("RGBA", size, PAPER_BLACK_WASH)
     rgba.alpha_composite(wash)
-    return apply_paper_grain(rgba.convert("RGB"))
+    return rgba.convert("RGB")
 
 
 # --- Shared QR code builder ---
