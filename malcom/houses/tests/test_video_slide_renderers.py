@@ -11,6 +11,7 @@ from __future__ import annotations
 from datetime import date
 from types import SimpleNamespace
 
+from commons.design import brand_wash_canvas
 from django.test import TestCase
 from PIL import Image
 
@@ -117,3 +118,25 @@ class TestRenderVideoClosingSlide(TestCase):
             channel_url="https://www.youtube.com/@hakkoakkei",
         )
         self.assertEqual(img.size, VIDEO_SIZE)
+
+
+class TestBrandWashCanvasGrainFlag(TestCase):
+    """Regression: brand_wash_canvas(apply_grain=False) omits the grain layer.
+
+    Video slides must pass apply_grain=False so that consecutive frames do not
+    share an identical frozen-grain texture — the root cause of hakoake-backend#52.
+    """
+
+    def test_no_grain_canvas_is_deterministic(self) -> None:
+        # Without grain the canvas is fully deterministic across calls.
+        a = brand_wash_canvas((200, 200), apply_grain=False)
+        b = brand_wash_canvas((200, 200), apply_grain=False)
+        self.assertEqual(a.size, (200, 200))
+        self.assertEqual(a.mode, "RGB")
+        self.assertEqual(list(a.getdata()), list(b.getdata()))
+
+    def test_grain_canvas_differs_from_no_grain(self) -> None:
+        # Canvases with and without grain must differ in at least one pixel.
+        no_grain = brand_wash_canvas((200, 200), apply_grain=False)
+        with_grain = brand_wash_canvas((200, 200), apply_grain=True)
+        self.assertNotEqual(list(no_grain.getdata()), list(with_grain.getdata()))
