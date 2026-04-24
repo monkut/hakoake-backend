@@ -243,4 +243,5 @@ malcom/staticfiles/*
 
 # Backups and session files
 *.bak
+.claude/worktrees/
 CHECKPOINT.md
