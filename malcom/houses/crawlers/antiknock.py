@@ -324,14 +324,31 @@ class AntiknockCrawler(LiveHouseWebsiteCrawler):
         return performers[:max_performers]  # Limit to reasonable number
 
     def _extract_image_from_detail_page(self, html_content: str) -> str | None:
-        """Extract event flyer image URL from antiknock detail page."""
+        """Extract event flyer image URL from antiknock detail page.
+
+        Priority: og:image meta tag → first <img> with declared width/height ≥ 200px.
+        Both checks skip social/UI icons by path keyword.
+        """
         soup = self.create_soup(html_content)
+        skip = ("icon", "logo", "arrow", "btn", "button", "nav", "twitter", "facebook", "menu", "share", "social")
+        min_dim = 200
+
+        og = soup.find("meta", property="og:image")
+        if og and og.get("content"):
+            src = og["content"]
+            if not any(s in src.lower() for s in skip):
+                return urljoin(self.base_url, src)
+
         for img in soup.find_all("img", src=True):
             src = img["src"]
-            # Skip small icons/logos; look for flyer-like images
-            if any(skip in src.lower() for skip in ["icon", "logo", "arrow", "btn", "button", "nav"]):
+            if not src or src.startswith("data:") or any(s in src.lower() for s in skip):
                 continue
-            return urljoin(self.base_url, src)
+            try:
+                w, h = int(img.get("width", 0)), int(img.get("height", 0))
+            except (ValueError, TypeError):
+                continue
+            if w >= min_dim or h >= min_dim:
+                return urljoin(self.base_url, src)
         return None
 
     def _extract_event_title(self, event_text: str) -> str | None:  # noqa: C901, PLR0912, PLR0915, PLR0911
