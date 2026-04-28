@@ -91,11 +91,13 @@ class AntiknockCrawler(LiveHouseWebsiteCrawler):
                 # Extract performers from event text
                 performers = self._extract_antiknock_performers(event_text)
 
-                # If no performers found or names are truncated (contain "…"), fetch the detail page
+                # Always record the detail page URL for later event image backfill.
+                detail_url = urljoin(self.base_url, href)
+
+                # Fetch the detail page when performer names are truncated or missing.
                 has_truncation = any("…" in p for p in performers)
                 event_image_url = None
                 if not performers or has_truncation:
-                    detail_url = urljoin(self.base_url, href)
                     try:
                         detail_html = self.fetch_page(detail_url)
                         if detail_html:
@@ -116,6 +118,7 @@ class AntiknockCrawler(LiveHouseWebsiteCrawler):
                         "performers": performers,
                         "context": context,
                         "performance_name": self._extract_event_title(event_text),
+                        "source_url": detail_url,
                     }
                     if event_image_url:
                         schedule_data["event_image_url"] = event_image_url
