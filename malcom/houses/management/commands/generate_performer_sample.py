@@ -7,7 +7,6 @@ from django.conf import settings
 from django.core.management.base import BaseCommand, CommandParser
 from houses.functions import PERFORMER_SAMPLES_DIR, download_performer_song_audio
 from houses.models import MonthlyPlaylist, WeeklyPlaylist
-from performers.models import Performer
 
 logger = logging.getLogger(__name__)
 
@@ -31,10 +30,11 @@ class Command(BaseCommand):
             type=int,
             help="Download samples for all performers in a weekly playlist",
         )
-        group.add_argument(
+        parser.add_argument(
             "--performer-id",
             type=int,
-            help="Download sample for a single performer",
+            default=None,
+            help="If given, download the sample for only this performer in the playlist",
         )
         parser.add_argument(
             "--force",
@@ -80,7 +80,7 @@ class Command(BaseCommand):
 
         self.stdout.write(f"\nDone — ok: {ok}  skipped: {skipped}  failed: {failed}")
 
-    def _resolve_songs(self, options: dict) -> list:  # noqa: ANN001, PLR0911
+    def _resolve_songs(self, options: dict) -> list:  # noqa: ANN001
         monthly_id: int | None = options.get("monthly_playlist_id")
         weekly_id: int | None = options.get("weekly_playlist_id")
         performer_id: int | None = options.get("performer_id")
@@ -91,31 +91,24 @@ class Command(BaseCommand):
             except MonthlyPlaylist.DoesNotExist:
                 self.stderr.write(self.style.ERROR(f"MonthlyPlaylist id={monthly_id} not found"))
                 return []
-            return [
+            songs = [
                 entry.song
                 for entry in playlist.monthlyplaylistentry_set.select_related("song__performer").order_by("position")
             ]
-
-        if weekly_id is not None:
+        elif weekly_id is not None:
             try:
                 playlist = WeeklyPlaylist.objects.get(id=weekly_id)
             except WeeklyPlaylist.DoesNotExist:
                 self.stderr.write(self.style.ERROR(f"WeeklyPlaylist id={weekly_id} not found"))
                 return []
-            return [
+            songs = [
                 entry.song
                 for entry in playlist.weeklyplaylistentry_set.select_related("song__performer").order_by("position")
             ]
+        else:
+            return []
 
         if performer_id is not None:
-            try:
-                performer = Performer.objects.get(id=performer_id)
-            except Performer.DoesNotExist:
-                self.stderr.write(self.style.ERROR(f"Performer id={performer_id} not found"))
-                return []
-            songs = list(performer.songs.filter(youtube_url__gt="").order_by("id"))
-            if not songs:
-                self.stderr.write(self.style.WARNING(f"Performer {performer.name} has no songs with a YouTube URL"))
-            return songs
+            songs = [s for s in songs if s.performer.id == performer_id]
 
-        return []
+        return songs

@@ -170,7 +170,7 @@ class TestGeneratePerformerSampleCommand(TestCase):
         self.assertEqual(mock_dl.call_count, 1)
         self.assertEqual(mock_dl.call_args.args[0].id, self.song1.id)
 
-    def test_performer_id_downloads_songs_for_that_performer(self) -> None:
+    def test_performer_id_filters_to_single_performer_in_weekly_playlist(self) -> None:
         fake_path = Path("/tmp/fake_audio.mp3")  # noqa: S108
         out = StringIO()
         with (
@@ -179,13 +179,36 @@ class TestGeneratePerformerSampleCommand(TestCase):
         ):
             call_command(
                 "generate_performer_sample",
+                f"--weekly-playlist-id={self.weekly_playlist.id}",
                 f"--performer-id={self.performer1.id}",
                 stdout=out,
             )
 
-        # performer1 has song1 with URL, song_no_url has no URL so should be skipped before dl call
+        # Only performer1's song (song1) should be downloaded; performer2 (song2) is excluded
         self.assertEqual(mock_dl.call_count, 1)
         self.assertEqual(mock_dl.call_args.args[0].id, self.song1.id)
+
+    def test_performer_id_filters_to_single_performer_in_monthly_playlist(self) -> None:
+        # Add performer2's song to the monthly playlist for this test
+        from houses.models import MonthlyPlaylistEntry  # noqa: PLC0415
+
+        MonthlyPlaylistEntry.objects.create(playlist=self.monthly_playlist, song=self.song2, position=2)
+
+        fake_path = Path("/tmp/fake_audio.mp3")  # noqa: S108
+        out = StringIO()
+        with (
+            self._patch_download(return_path=fake_path) as mock_dl,
+            patch("houses.management.commands.generate_performer_sample.Path.exists", return_value=False),
+        ):
+            call_command(
+                "generate_performer_sample",
+                f"--monthly-playlist-id={self.monthly_playlist.id}",
+                f"--performer-id={self.performer2.id}",
+                stdout=out,
+            )
+
+        self.assertEqual(mock_dl.call_count, 1)
+        self.assertEqual(mock_dl.call_args.args[0].id, self.song2.id)
 
     def test_missing_weekly_playlist_id_writes_error(self) -> None:
         err = StringIO()
@@ -205,14 +228,16 @@ class TestGeneratePerformerSampleCommand(TestCase):
         )
         self.assertIn("not found", err.getvalue())
 
-    def test_missing_performer_id_writes_error(self) -> None:
+    def test_performer_id_not_in_playlist_writes_error(self) -> None:
+        performer3 = _make_performer("BandGamma")
         err = StringIO()
         call_command(
             "generate_performer_sample",
-            "--performer-id=99999",
+            f"--weekly-playlist-id={self.weekly_playlist.id}",
+            f"--performer-id={performer3.id}",
             stderr=err,
         )
-        self.assertIn("not found", err.getvalue())
+        self.assertIn("No songs found", err.getvalue())
 
     def test_failed_download_counted_in_output(self) -> None:
         out = StringIO()
