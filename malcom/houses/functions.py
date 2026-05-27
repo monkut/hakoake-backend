@@ -39,7 +39,7 @@ from django.utils import timezone
 from moviepy import AudioFileClip, CompositeAudioClip, ImageClip, concatenate_audioclips, concatenate_videoclips
 from moviepy.audio import fx as afx
 from performers.models import Performer, PerformerSocialLink, PerformerSong
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 from pydub import AudioSegment
 from pydub.generators import WhiteNoise
 
@@ -842,8 +842,9 @@ SHORTS_MAX_PERFORMERS = 12
 SHORTS_INTRO_DURATION = 5.0
 SHORTS_PERFORMER_DURATION = 10.0
 SHORTS_CLOSING_DURATION = 3.0
-SHORTS_MAX_TOTAL_DURATION = 60.0
+SHORTS_MAX_TOTAL_DURATION = 70.0
 SHORTS_AUDIO_FADE_DURATION = 0.5
+SHORTS_MIN_NAME_FONT_SIZE = 32
 PERFORMER_SAMPLES_DIR = "performer_samples"
 
 
@@ -888,18 +889,68 @@ def download_performer_song_audio(song: PerformerSong, *, force: bool = False) -
     return None
 
 
+def _crop_to_square(img: Image.Image) -> Image.Image:
+    """Center-crop an image to a square."""
+    w, h = img.size
+    side = min(w, h)
+    left = (w - side) // 2
+    top = (h - side) // 2
+    return img.crop((left, top, left + side, top + side))
+
+
+def _render_intro_row(
+    canvas: Image.Image,
+    draw: ImageDraw.ImageDraw,
+    row_y: int,
+    line_h: int,
+    thumb_size: int,
+    text_left: int,
+    pos: int,
+    name: str,
+    spotlight: bool,
+    image_path: Path | None,
+    venue_label: str | None,
+    date_label: str | None,
+    name_font: ImageFont.FreeTypeFont,
+    meta_font: ImageFont.FreeTypeFont,
+) -> None:
+    """Render one performer row on the intro slide (thumbnail + name + venue/date)."""
+    thumb_y = row_y + SP_MD
+    if image_path and image_path.exists():
+        try:
+            thumb_img = Image.open(image_path).convert("RGB")
+            thumb_img = _crop_to_square(thumb_img).resize((thumb_size, thumb_size), Image.LANCZOS)
+            canvas.paste(thumb_img, (SP_LG, thumb_y))
+        except Exception:  # noqa: BLE001
+            _draw_thumb_placeholder(draw, SP_LG, thumb_y, thumb_size, pos)
+    else:
+        _draw_thumb_placeholder(draw, SP_LG, thumb_y, thumb_size, pos)
+
+    name_display = name + (" ★" if spotlight else "")
+    name_y = row_y + int(line_h * 0.30)
+    draw.text((text_left, name_y), name_display, font=name_font, fill=AGED_CREAM, anchor="lm")
+
+    if venue_label or date_label:
+        meta_parts = [f"@{venue_label}"] if venue_label else []
+        if date_label:
+            meta_parts.append(date_label)
+        meta_y = row_y + int(line_h * 0.65)
+        draw.text((text_left, meta_y), "  ".join(meta_parts), font=meta_font, fill=INK_GRAY, anchor="lm")
+
+
 def render_shorts_intro_slide(
     title_label: str,
-    lineup: list[tuple[int, str, bool]],
+    lineup: list[tuple[int, str, bool, Path | None, str | None, str | None]],
 ) -> Image.Image:
     """Render the opening slide of a YouTube Shorts playlist video (9:16, 1080×1920).
 
     Layout:
       - Top stack: editorial label + display-serif title
-      - Thick rule divider
-      - "SET LIST" header + stacked numbered lineup (single column)
-      - Ruled-line texture fills empty lower space for DIY flyer feel
+      - Stacked lineup rows: thumbnail | name (auto-fit) / @venue date (smaller)
+      - Spotlighted performers get a small ★ marker
       - Corner wordmark bottom-left
+
+    lineup tuples: (position, name, spotlight, image_path, venue_label, date_label)
     """
     canvas = brand_wash_canvas(VIDEO_SHORTS)
     draw = ImageDraw.Draw(canvas)
@@ -912,70 +963,59 @@ def render_shorts_intro_slide(
     title_y = SP_LG + 48
     draw.text((SP_LG, title_y), title_label, font=title_font, fill=AGED_CREAM)
 
-    # Thick rule divider below title (DIY flyer aesthetic)
-    rule_y = title_y + 120
-    draw.rectangle([(SP_LG, rule_y), (video_w - SP_LG, rule_y + 3)], fill=FLYER_RED)
-
-    # "SET LIST" editorial header above lineup
-    setlist_y = rule_y + SP_MD
-    set_font = body_font(22, bold=True)
-    draw.text((SP_LG, setlist_y), "SET LIST", font=set_font, fill=INK_GRAY)
-
-    # Stacked lineup entries
-    list_top = setlist_y + 36
-    list_bottom = video_h - 240
+    list_top = 280
+    list_bottom = video_h - 180
     list_h = list_bottom - list_top
     entries = lineup[:SHORTS_MAX_PERFORMERS]
-    if entries:
-        line_h = list_h // len(entries)
-        line_h = max(80, min(line_h, 130))
-        num_font = display_font(int(line_h * 0.72))
-        name_font = display_font(int(line_h * 0.46))
-        max_name_w = video_w - SP_LG * 2 - 130
+    if not entries:
+        draw_corner_wordmark(draw, (SP_LG, video_h - SP_LG), anchor="lb", color=INK_GRAY, size=20)
+        return canvas
 
-        for i, (pos, name, spotlight) in enumerate(entries):
-            y = list_top + i * line_h
-            # Thin row separator (except first)
-            if i > 0:
-                draw.rectangle([(SP_LG + 130, y), (video_w - SP_LG, y + 1)], fill=INK_GRAY)
-            draw.text(
-                (SP_LG, y + line_h // 2),
-                f"{pos:02d}",
-                font=num_font,
-                fill=FLYER_RED,
-                anchor="lm",
-            )
-            display_name = name + (" ★" if spotlight else "")
-            lines = wrap_text(draw, display_name, name_font, max_name_w)
-            if lines:
-                draw.text(
-                    (SP_LG + 130, y + line_h // 2),
-                    lines[0],
-                    font=name_font,
-                    fill=AGED_CREAM,
-                    anchor="lm",
-                )
+    line_h = max(180, list_h // len(entries))
+    thumb_size = line_h - SP_MD * 2
+    text_left = SP_LG + thumb_size + SP_MD
+    meta_font_size = max(24, min(int(line_h * 0.18), 36))
+    meta_font = body_font(meta_font_size)
+    max_name_w = video_w - text_left - SP_LG
 
-    # Ruled-line texture in lower empty space (DIY notebook feel)
-    last_entry_bottom = list_top + len(entries) * min(max(80, list_h // max(len(entries), 1)), 130)
-    rule_spacing = 28
-    rule_color = (110, 104, 96, 40)  # very faint INK_GRAY
-    canvas_rgba = canvas.convert("RGBA")
-    overlay = Image.new("RGBA", (video_w, video_h), (0, 0, 0, 0))
-    overlay_draw = ImageDraw.Draw(overlay)
-    ry = last_entry_bottom + rule_spacing
-    while ry < video_h - SP_XL:
-        overlay_draw.rectangle([(SP_LG, ry), (video_w - SP_LG, ry + 1)], fill=rule_color)
-        ry += rule_spacing
-    canvas_rgba.alpha_composite(overlay)
-    canvas = canvas_rgba.convert("RGB")
-    draw = ImageDraw.Draw(canvas)
+    name_font_size = min(int(line_h * 0.38), 96)
+    while name_font_size > SHORTS_MIN_NAME_FONT_SIZE:
+        _candidate = display_font(name_font_size)
+        if all(len(wrap_text(draw, n + (" ★" if s else ""), _candidate, max_name_w)) == 1 for _, n, s, *_ in entries):
+            break
+        name_font_size -= 4
+    name_font = display_font(name_font_size)
+
+    for i, (pos, name, spotlight, image_path, venue_label, date_label) in enumerate(entries):
+        _render_intro_row(
+            canvas,
+            draw,
+            row_y=list_top + i * line_h,
+            line_h=line_h,
+            thumb_size=thumb_size,
+            text_left=text_left,
+            pos=pos,
+            name=name,
+            spotlight=spotlight,
+            image_path=image_path,
+            venue_label=venue_label,
+            date_label=date_label,
+            name_font=name_font,
+            meta_font=meta_font,
+        )
 
     draw_corner_wordmark(draw, (SP_LG, video_h - SP_LG), anchor="lb", color=INK_GRAY, size=20)
     return canvas
 
 
-def render_shorts_performer_slide(  # noqa: PLR0913
+def _draw_thumb_placeholder(draw: ImageDraw.ImageDraw, x: int, y: int, size: int, pos: int) -> None:
+    """Draw a numbered placeholder box when no performer image is available."""
+    draw.rectangle((x, y, x + size, y + size), outline=INK_GRAY, width=2)
+    num_font = display_font(min(size // 2, 80))
+    draw.text((x + size // 2, y + size // 2), f"{pos:02d}", font=num_font, fill=FLYER_RED, anchor="mm")
+
+
+def render_shorts_performer_slide(  # noqa: PLR0913, PLR0915
     position: int,
     performer: Performer,
     song_title: str,
@@ -987,7 +1027,8 @@ def render_shorts_performer_slide(  # noqa: PLR0913
 
     Layout (1080×1920):
       - Top section: oversized vermillion position numeral
-      - Middle section: display-serif performer name + romaji subtitle + song title
+      - Middle section: display-serif performer name + romaji subtitle
+      - Song section: large centered "♪ {song}" overlay
       - Lower-middle section: venue + date metadata
       - Bottom QR card (artist link only — single QR fits the punchy Shorts pacing)
       - Corner wordmark
@@ -1022,11 +1063,14 @@ def render_shorts_performer_slide(  # noqa: PLR0913
         cursor_y += 48
 
     if song_title:
-        song_font = body_font(32)
-        # Thin rule before song info block
-        draw.rectangle([(text_left, cursor_y + SP_SM - 2), (video_w - SP_LG, cursor_y + SP_SM - 1)], fill=INK_GRAY)
-        draw.text((text_left, cursor_y + SP_SM + 8), f"— {song_title}", font=song_font, fill=AGED_CREAM, anchor="lt")
-        cursor_y += SP_SM + 48
+        song_font = display_font(72)
+        song_text = f"♪ {song_title}"
+        song_lines = wrap_text(draw, song_text, song_font, text_max_w)
+        cursor_y += SP_SM
+        for line in song_lines[:2]:
+            draw.text((video_w // 2, cursor_y), line, font=song_font, fill=AGED_CREAM, anchor="mt")
+            cursor_y += 82
+        cursor_y += SP_SM
 
     if performance_date:
         date_font = body_font(32, bold=True)
@@ -1474,9 +1518,9 @@ def _generate_playlist_video_shorts(  # noqa: PLR0913, PLR0915, C901, PLR0912
     max_performers: int = SHORTS_MAX_PERFORMERS,
     intro_voiceover: str | None = None,
 ) -> Path:
-    """Generate a vertical 9:16 YouTube Shorts video (≤60s) from a playlist.
+    """Generate a vertical 9:16 YouTube Shorts video (≤70s) from a playlist.
 
-    Shorts pacing keeps the runtime under 60s by capping the number of
+    Shorts pacing keeps the runtime under 70s by capping the number of
     performer slides and using shorter fixed durations per slide. Each slide
     has a TTS voice-over mixed with background/song audio.
     """
@@ -1492,15 +1536,40 @@ def _generate_playlist_video_shorts(  # noqa: PLR0913, PLR0915, C901, PLR0912
     cap = max(1, min(max_performers, capacity_by_duration))
     entries = all_entries[:cap]
     if len(all_entries) > cap:
-        logger.info(f"Shorts: capping performer slides at {cap} of {len(all_entries)} to fit 60s budget")
+        logger.info(f"Shorts: capping performer slides at {cap} of {len(all_entries)} to fit 70s budget")
 
     slides: list[tuple[Path, float]] = []
 
+    # Pre-fetch performance data for all entries (needed for both intro and performer slides)
+    entry_performances: dict[int, tuple[str | None, dt.date | None]] = {}
+    for entry in entries:
+        performer = entry.song.performer
+        performance = (
+            PerformanceSchedule.objects.filter(
+                performers=performer,
+                performance_date__gte=date_start,
+                performance_date__lt=date_end,
+            )
+            .select_related("live_house")
+            .first()
+        )
+        entry_performances[entry.position] = (
+            performance.live_house.name if performance else None,
+            performance.performance_date if performance else None,
+        )
+
     # 1. Intro slide
     logger.info("Creating shorts intro slide...")
-    intro_lineup: list[tuple[int, str, bool]] = [
-        (entry.position, entry.song.performer.name, entry.is_spotlight) for entry in entries
-    ]
+    intro_lineup: list[tuple[int, str, bool, Path | None, str | None, str | None]] = []
+    for entry in entries:
+        performer = entry.song.performer
+        venue_name, perf_date = entry_performances[entry.position]
+        image_path: Path | None = None
+        if performer.performer_image:
+            image_path = Path(performer.performer_image.path)
+        date_label = f"{_ordinal_day(perf_date.day)} {perf_date.strftime('%b')}" if perf_date else None
+        intro_lineup.append((entry.position, performer.name, entry.is_spotlight, image_path, venue_name, date_label))
+
     intro_slide = render_shorts_intro_slide(title_label=title_label, lineup=intro_lineup)
     intro_path = temp_dir / "shorts_intro.png"
     intro_slide.save(intro_path)
@@ -1511,19 +1580,8 @@ def _generate_playlist_video_shorts(  # noqa: PLR0913, PLR0915, C901, PLR0912
     performer_entries: list[tuple[Path, float, PerformerSong | None, str]] = []
     for entry in entries:
         performer = entry.song.performer
-
-        performance = (
-            PerformanceSchedule.objects.filter(
-                performers=performer,
-                performance_date__gte=date_start,
-                performance_date__lt=date_end,
-            )
-            .select_related("live_house", "live_house__website")
-            .first()
-        )
+        venue_name, perf_date = entry_performances[entry.position]
         artist_url = performer.website or entry.song.youtube_url
-        venue_name = performance.live_house.name if performance else None
-        perf_date = performance.performance_date if performance else None
 
         if venue_name and perf_date:
             voiceover_text = (
@@ -1695,7 +1753,7 @@ def _generate_playlist_video_shorts(  # noqa: PLR0913, PLR0915, C901, PLR0912
 
 
 def generate_playlist_video_shorts(playlist: MonthlyPlaylist, max_performers: int = SHORTS_MAX_PERFORMERS) -> Path:
-    """Generate a YouTube Shorts (9:16, ≤60s) video for a monthly playlist."""
+    """Generate a YouTube Shorts (9:16, ≤70s) video for a monthly playlist."""
     month_start = playlist.date
     intro_voiceover = f"Bands playing in {month_start.strftime('%B')}"
     return _generate_playlist_video_shorts(
@@ -1716,7 +1774,7 @@ def generate_weekly_playlist_video_shorts(
     playlist: WeeklyPlaylist,
     max_performers: int = SHORTS_MAX_PERFORMERS,
 ) -> Path:
-    """Generate a YouTube Shorts (9:16, ≤60s) video for a weekly playlist."""
+    """Generate a YouTube Shorts (9:16, ≤70s) video for a weekly playlist."""
     week_start = playlist.date
     intro_voiceover = f"Bands playing the week of {week_start.strftime('%B')} {_ordinal_day(week_start.day)}"
     return _generate_playlist_video_shorts(

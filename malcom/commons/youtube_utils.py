@@ -279,3 +279,28 @@ def add_video_to_playlist(playlist_id: str, video_id: str, client_secrets_file: 
     else:
         logger.info(f"Added video {video_id} to playlist {playlist_id}")
         return True
+
+
+def post_video_comment(video_id: str, comment_text: str, client_secrets_file: Path) -> bool:
+    """Post a top-level comment on a YouTube video."""
+    youtube = get_authorized_youtube_client(client_secrets_file)
+    try:
+        youtube.commentThreads().insert(
+            part="snippet",
+            body={
+                "snippet": {
+                    "videoId": video_id,
+                    "topLevelComment": {
+                        "snippet": {
+                            "textOriginal": comment_text,
+                        },
+                    },
+                },
+            },
+        ).execute()
+    except googleapiclient.errors.HttpError:
+        logger.exception(f"Failed to post comment on video {video_id}")
+        return False
+    else:
+        logger.info(f"Posted comment on video {video_id}")
+        return True
