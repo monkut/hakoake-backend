@@ -975,7 +975,7 @@ def render_shorts_intro_slide(
     return canvas
 
 
-def render_shorts_performer_slide(  # noqa: PLR0913
+def render_shorts_performer_slide(  # noqa: PLR0913, PLR0915
     position: int,
     performer: Performer,
     song_title: str,
@@ -987,7 +987,8 @@ def render_shorts_performer_slide(  # noqa: PLR0913
 
     Layout (1080×1920):
       - Top section: oversized vermillion position numeral
-      - Middle section: display-serif performer name + romaji subtitle + song title
+      - Middle section: display-serif performer name + romaji subtitle
+      - Song section: large centered "♪ {song}" overlay
       - Lower-middle section: venue + date metadata
       - Bottom QR card (artist link only — single QR fits the punchy Shorts pacing)
       - Corner wordmark
@@ -1022,11 +1023,14 @@ def render_shorts_performer_slide(  # noqa: PLR0913
         cursor_y += 48
 
     if song_title:
-        song_font = body_font(32)
-        # Thin rule before song info block
-        draw.rectangle([(text_left, cursor_y + SP_SM - 2), (video_w - SP_LG, cursor_y + SP_SM - 1)], fill=INK_GRAY)
-        draw.text((text_left, cursor_y + SP_SM + 8), f"— {song_title}", font=song_font, fill=AGED_CREAM, anchor="lt")
-        cursor_y += SP_SM + 48
+        song_font = display_font(72)
+        song_text = f"♪ {song_title}"
+        song_lines = wrap_text(draw, song_text, song_font, text_max_w)
+        cursor_y += SP_SM
+        for line in song_lines[:2]:
+            draw.text((video_w // 2, cursor_y), line, font=song_font, fill=AGED_CREAM, anchor="mt")
+            cursor_y += 82
+        cursor_y += SP_SM
 
     if performance_date:
         date_font = body_font(32, bold=True)

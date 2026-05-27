@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from commons.youtube_utils import insert_video_at_position, upload_video_to_youtube
+from commons.youtube_utils import insert_video_at_position, post_video_comment, upload_video_to_youtube
 from django.core.management.base import BaseCommand, CommandParser
 from django.utils import timezone
 from houses.functions import generate_weekly_playlist_video, generate_weekly_playlist_video_shorts
@@ -72,13 +72,74 @@ class Command(BaseCommand):
         self.stdout.write(f"Playlist URL: {playlist.youtube_playlist_url}")
 
         if video_format == VIDEO_FORMAT_SHORTS:
-            self.stdout.write("Format: shorts (9:16, ≤60s, no narration)")
+            self.stdout.write("Format: shorts (9:16, ≤60s)")
+
+            if not skip_update_playlist and not force and playlist.shorts_youtube_video_id:
+                self.stdout.write(
+                    self.style.SUCCESS(
+                        f"Shorts video already uploaded (video_id={playlist.shorts_youtube_video_id}); skipping. "
+                        f"Pass --force to re-render."
+                    )
+                )
+                return
+
+            if force and playlist.shorts_youtube_video_id:
+                self.stdout.write(
+                    self.style.WARNING(
+                        f"--force: clearing previously stored shorts video state "
+                        f"(previous video_id={playlist.shorts_youtube_video_id!r})."
+                    )
+                )
+                playlist.shorts_youtube_video_id = ""
+                playlist.save(update_fields=["shorts_youtube_video_id"])
+
             shorts_filepath = generate_weekly_playlist_video_shorts(playlist)
             self.stdout.write(self.style.SUCCESS("\n=== Shorts Video Generated ===\n"))
             self.stdout.write(f"Video saved to: {shorts_filepath}")
-            self.stdout.write(
-                "Upload manually to YouTube Shorts — the playlist intro upload flow is for long-form videos."
-            )
+
+            if skip_update_playlist:
+                self.stdout.write("Skipping YouTube upload (--skip-update-playlist)")
+                return
+
+            if not secrets_file.exists():
+                self.stdout.write(
+                    self.style.WARNING(
+                        f"Secrets file not found: {secrets_file} — skipping upload. Upload manually to YouTube Shorts."
+                    )
+                )
+                return
+
+            week_str = playlist.date.strftime("%Y-%m-%d")
+            shorts_title = f"HAKKO-AKKEI WEEK {week_str} TOKYO Shorts"
+            shorts_description = f"Weekly lineup for the week of {week_str}."
+            if playlist.youtube_playlist_url:
+                shorts_description += f"\nPlaylist: {playlist.youtube_playlist_url}"
+
+            self.stdout.write(f"Uploading shorts to YouTube: {shorts_title}")
+            try:
+                shorts_video_id = upload_video_to_youtube(
+                    shorts_filepath, shorts_title, shorts_description, secrets_file
+                )
+            except Exception as exc:  # noqa: BLE001
+                self.stderr.write(self.style.ERROR(f"Failed to upload shorts: {exc}"))
+                return
+
+            playlist.shorts_youtube_video_id = shorts_video_id
+            playlist.save(update_fields=["shorts_youtube_video_id"])
+            self.stdout.write(self.style.SUCCESS(f"Uploaded shorts: https://youtu.be/{shorts_video_id}"))
+
+            # Post playlist description as a comment on the shorts video
+            entries = playlist.weeklyplaylistentry_set.select_related("song__performer").order_by("position")
+            lineup_lines = [f"{e.position}. {e.song.performer.name}" for e in entries]
+            comment_text = f"Bands playing the week of {week_str}\n\n" + "\n".join(lineup_lines)
+            if playlist.youtube_playlist_url:
+                comment_text += f"\n\nPlaylist: {playlist.youtube_playlist_url}"
+
+            comment_ok = post_video_comment(shorts_video_id, comment_text, secrets_file)
+            if comment_ok:
+                self.stdout.write(self.style.SUCCESS("Posted playlist description as comment."))
+            else:
+                self.stderr.write(self.style.WARNING("Failed to post comment — manual comment may be needed."))
             return
 
         # Idempotency branches — only relevant when we would otherwise upload/insert.
