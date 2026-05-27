@@ -842,8 +842,9 @@ SHORTS_MAX_PERFORMERS = 12
 SHORTS_INTRO_DURATION = 5.0
 SHORTS_PERFORMER_DURATION = 10.0
 SHORTS_CLOSING_DURATION = 3.0
-SHORTS_MAX_TOTAL_DURATION = 60.0
+SHORTS_MAX_TOTAL_DURATION = 70.0
 SHORTS_AUDIO_FADE_DURATION = 0.5
+SHORTS_MIN_NAME_FONT_SIZE = 32
 PERFORMER_SAMPLES_DIR = "performer_samples"
 
 
@@ -912,26 +913,25 @@ def render_shorts_intro_slide(
     title_y = SP_LG + 48
     draw.text((SP_LG, title_y), title_label, font=title_font, fill=AGED_CREAM)
 
-    # Thick rule divider below title (DIY flyer aesthetic)
-    rule_y = title_y + 120
-    draw.rectangle([(SP_LG, rule_y), (video_w - SP_LG, rule_y + 3)], fill=FLYER_RED)
-
-    # "SET LIST" editorial header above lineup
-    setlist_y = rule_y + SP_MD
-    set_font = body_font(22, bold=True)
-    draw.text((SP_LG, setlist_y), "SET LIST", font=set_font, fill=INK_GRAY)
-
-    # Stacked lineup entries
-    list_top = setlist_y + 36
-    list_bottom = video_h - 240
+    # Top-N stacked lineup — fills slide vertically, font auto-fits to avoid wrapping
+    list_top = 280
+    list_bottom = video_h - 180
     list_h = list_bottom - list_top
     entries = lineup[:SHORTS_MAX_PERFORMERS]
     if entries:
-        line_h = list_h // len(entries)
-        line_h = max(80, min(line_h, 130))
-        num_font = display_font(int(line_h * 0.72))
-        name_font = display_font(int(line_h * 0.46))
+        line_h = max(64, list_h // len(entries))
+        num_font_size = min(int(line_h * 0.70), 160)
+        num_font = display_font(num_font_size)
         max_name_w = video_w - SP_LG * 2 - 130
+
+        # Reduce name font until every entry fits on one line
+        name_font_size = min(int(line_h * 0.45), 120)
+        while name_font_size > SHORTS_MIN_NAME_FONT_SIZE:
+            _candidate = display_font(name_font_size)
+            if all(len(wrap_text(draw, n + (" ★" if s else ""), _candidate, max_name_w)) == 1 for _, n, s in entries):
+                break
+            name_font_size -= 4
+        name_font = display_font(name_font_size)
 
         for i, (pos, name, spotlight) in enumerate(entries):
             y = list_top + i * line_h
@@ -946,15 +946,13 @@ def render_shorts_intro_slide(
                 anchor="lm",
             )
             display_name = name + (" ★" if spotlight else "")
-            lines = wrap_text(draw, display_name, name_font, max_name_w)
-            if lines:
-                draw.text(
-                    (SP_LG + 130, y + line_h // 2),
-                    lines[0],
-                    font=name_font,
-                    fill=AGED_CREAM,
-                    anchor="lm",
-                )
+            draw.text(
+                (SP_LG + 130, y + line_h // 2),
+                display_name,
+                font=name_font,
+                fill=AGED_CREAM,
+                anchor="lm",
+            )
 
     # Ruled-line texture in lower empty space (DIY notebook feel)
     last_entry_bottom = list_top + len(entries) * min(max(80, list_h // max(len(entries), 1)), 130)
@@ -1478,9 +1476,9 @@ def _generate_playlist_video_shorts(  # noqa: PLR0913, PLR0915, C901, PLR0912
     max_performers: int = SHORTS_MAX_PERFORMERS,
     intro_voiceover: str | None = None,
 ) -> Path:
-    """Generate a vertical 9:16 YouTube Shorts video (≤60s) from a playlist.
+    """Generate a vertical 9:16 YouTube Shorts video (≤70s) from a playlist.
 
-    Shorts pacing keeps the runtime under 60s by capping the number of
+    Shorts pacing keeps the runtime under 70s by capping the number of
     performer slides and using shorter fixed durations per slide. Each slide
     has a TTS voice-over mixed with background/song audio.
     """
@@ -1496,7 +1494,7 @@ def _generate_playlist_video_shorts(  # noqa: PLR0913, PLR0915, C901, PLR0912
     cap = max(1, min(max_performers, capacity_by_duration))
     entries = all_entries[:cap]
     if len(all_entries) > cap:
-        logger.info(f"Shorts: capping performer slides at {cap} of {len(all_entries)} to fit 60s budget")
+        logger.info(f"Shorts: capping performer slides at {cap} of {len(all_entries)} to fit 70s budget")
 
     slides: list[tuple[Path, float]] = []
 
@@ -1699,7 +1697,7 @@ def _generate_playlist_video_shorts(  # noqa: PLR0913, PLR0915, C901, PLR0912
 
 
 def generate_playlist_video_shorts(playlist: MonthlyPlaylist, max_performers: int = SHORTS_MAX_PERFORMERS) -> Path:
-    """Generate a YouTube Shorts (9:16, ≤60s) video for a monthly playlist."""
+    """Generate a YouTube Shorts (9:16, ≤70s) video for a monthly playlist."""
     month_start = playlist.date
     intro_voiceover = f"Bands playing in {month_start.strftime('%B')}"
     return _generate_playlist_video_shorts(
@@ -1720,7 +1718,7 @@ def generate_weekly_playlist_video_shorts(
     playlist: WeeklyPlaylist,
     max_performers: int = SHORTS_MAX_PERFORMERS,
 ) -> Path:
-    """Generate a YouTube Shorts (9:16, ≤60s) video for a weekly playlist."""
+    """Generate a YouTube Shorts (9:16, ≤70s) video for a weekly playlist."""
     week_start = playlist.date
     intro_voiceover = f"Bands playing the week of {week_start.strftime('%B')} {_ordinal_day(week_start.day)}"
     return _generate_playlist_video_shorts(
