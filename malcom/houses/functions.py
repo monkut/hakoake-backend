@@ -86,6 +86,13 @@ ROBOTIC_VOICE_PRESETS = {
 }
 
 
+def _ordinal_day(day: int) -> str:
+    """Return day number with English ordinal suffix (1 → '1st', 2 → '2nd', etc.)."""
+    if 11 <= day % 100 <= 13:  # noqa: PLR2004
+        return f"{day}th"
+    return f"{day}" + {1: "st", 2: "nd", 3: "rd"}.get(day % 10, "th")
+
+
 async def generate_robotic_tts(
     text: str,
     output_path: Path,
@@ -832,8 +839,8 @@ def render_video_closing_slide(closing_text: str, channel_url: str) -> Image.Ima
 
 
 SHORTS_MAX_PERFORMERS = 12
-SHORTS_INTRO_DURATION = 3.0
-SHORTS_PERFORMER_DURATION = 4.0
+SHORTS_INTRO_DURATION = 5.0
+SHORTS_PERFORMER_DURATION = 10.0
 SHORTS_CLOSING_DURATION = 3.0
 SHORTS_MAX_TOTAL_DURATION = 60.0
 SHORTS_AUDIO_FADE_DURATION = 0.5
@@ -1145,7 +1152,7 @@ def _generate_playlist_video(  # noqa: C901, PLR0915, PLR0912
             .first()
         )
 
-        artist_url = performer.website if performer.website else entry.song.youtube_url
+        artist_url = performer.website or entry.song.youtube_url
         venue_url = (
             performance.live_house.website.url
             if performance and hasattr(performance.live_house, "website") and performance.live_house.website.url
@@ -1405,7 +1412,7 @@ def generate_weekly_playlist_video(playlist: WeeklyPlaylist, intro_text: str | N
     )
 
 
-def _generate_playlist_video_shorts(  # noqa: PLR0913, PLR0915, C901
+def _generate_playlist_video_shorts(  # noqa: PLR0913, PLR0915, C901, PLR0912
     playlist: MonthlyPlaylist | WeeklyPlaylist,
     entry_set_name: str,
     date_start: dt.date,
@@ -1415,12 +1422,13 @@ def _generate_playlist_video_shorts(  # noqa: PLR0913, PLR0915, C901
     filename_prefix: str,
     timestamp_format: str,
     max_performers: int = SHORTS_MAX_PERFORMERS,
+    intro_voiceover: str | None = None,
 ) -> Path:
     """Generate a vertical 9:16 YouTube Shorts video (≤60s) from a playlist.
 
     Shorts pacing keeps the runtime under 60s by capping the number of
-    performer slides and using shorter fixed durations per slide. Audio is
-    background music only — narration is the long-form video's job.
+    performer slides and using shorter fixed durations per slide. Each slide
+    has a TTS voice-over mixed with background/song audio.
     """
     temp_dir = Path(tempfile.mkdtemp())
     logger.info(f"Created temp directory: {temp_dir}")
@@ -1448,9 +1456,9 @@ def _generate_playlist_video_shorts(  # noqa: PLR0913, PLR0915, C901
     intro_slide.save(intro_path)
     slides.append((intro_path, SHORTS_INTRO_DURATION))
 
-    # 2. Performer slides — collect (path, duration, song) so we can build per-performer audio
+    # 2. Performer slides — collect (path, duration, song, voiceover) so we can build per-performer audio
     logger.info(f"Creating {len(entries)} shorts performer slides...")
-    performer_entries: list[tuple[Path, float, PerformerSong | None]] = []
+    performer_entries: list[tuple[Path, float, PerformerSong | None, str]] = []
     for entry in entries:
         performer = entry.song.performer
 
@@ -1463,9 +1471,18 @@ def _generate_playlist_video_shorts(  # noqa: PLR0913, PLR0915, C901
             .select_related("live_house", "live_house__website")
             .first()
         )
-        artist_url = performer.website if performer.website else entry.song.youtube_url
+        artist_url = performer.website or entry.song.youtube_url
         venue_name = performance.live_house.name if performance else None
         perf_date = performance.performance_date if performance else None
+
+        if venue_name and perf_date:
+            voiceover_text = (
+                f"{performer.name} playing {venue_name} on {perf_date.strftime('%B')} {_ordinal_day(perf_date.day)}"
+            )
+        elif venue_name:
+            voiceover_text = f"{performer.name} playing {venue_name}"
+        else:
+            voiceover_text = performer.name
 
         performer_slide = render_shorts_performer_slide(
             position=entry.position,
@@ -1478,7 +1495,7 @@ def _generate_playlist_video_shorts(  # noqa: PLR0913, PLR0915, C901
         performer_path = temp_dir / f"shorts_performer_{entry.position:02d}.png"
         performer_slide.save(performer_path)
         slides.append((performer_path, SHORTS_PERFORMER_DURATION))
-        performer_entries.append((performer_path, SHORTS_PERFORMER_DURATION, entry.song))
+        performer_entries.append((performer_path, SHORTS_PERFORMER_DURATION, entry.song, voiceover_text))
 
     # 3. Closing slide
     logger.info("Creating shorts closing slide...")
@@ -1490,11 +1507,39 @@ def _generate_playlist_video_shorts(  # noqa: PLR0913, PLR0915, C901
     closing_slide.save(closing_path)
     slides.append((closing_path, SHORTS_CLOSING_DURATION))
 
+    # Generate TTS voice-over audio files
+    async def _gen_tts(text: str, path: Path) -> None:
+        communicate = edge_tts.Communicate(
+            text, settings.EDGE_TTS_VOICE, rate=settings.EDGE_TTS_RATE, pitch=settings.EDGE_TTS_PITCH
+        )
+        await communicate.save(str(path))
+
+    intro_tts_path: Path | None = None
+    if intro_voiceover:
+        intro_tts_path = temp_dir / "shorts_intro_tts.mp3"
+        try:
+            asyncio.run(_gen_tts(intro_voiceover, intro_tts_path))
+            logger.info(f"Generated intro voice-over TTS: {intro_voiceover!r}")
+        except Exception:  # noqa: BLE001
+            logger.exception("Failed to generate intro voice-over TTS")
+            intro_tts_path = None
+
+    performer_tts_paths: list[Path | None] = []
+    for idx, (_slide_path, _duration, _song, voiceover_text) in enumerate(performer_entries):
+        tts_path = temp_dir / f"shorts_performer_tts_{idx:02d}.mp3"
+        try:
+            asyncio.run(_gen_tts(voiceover_text, tts_path))
+            logger.info(f"Generated performer voice-over TTS [{idx}]: {voiceover_text!r}")
+            performer_tts_paths.append(tts_path)
+        except Exception:  # noqa: BLE001
+            logger.exception(f"Failed to generate voice-over TTS for performer index {idx}")
+            performer_tts_paths.append(None)
+
     # Compose video clips (hard cuts, vertical canvas already baked into the PNGs)
     video_clips = [ImageClip(str(path)).with_duration(duration) for path, duration in slides]
     final_video = concatenate_videoclips(video_clips, method="compose")
 
-    # Build audio: background music for intro/closing; per-performer song during each performer slide.
+    # Build audio: background/song music mixed with TTS voice-over per slide.
     background_music_path = (
         Path(settings.BASE_DIR) / "data" / "get-in-the-groove-psychedelic-grunge-instrumental-391304.mp3"
     )
@@ -1508,16 +1553,25 @@ def _generate_playlist_video_shorts(  # noqa: PLR0913, PLR0915, C901
                 clip = concatenate_audioclips([clip] * loops)
             return clip.subclipped(0, target_duration)
 
-        # Intro: background music at low volume
+        tts_start_offset = 0.3  # brief pause before voice-over starts
+
+        # Intro: background music at low volume + voice-over
         if background_music_path.exists():
             bg_intro = AudioFileClip(str(background_music_path))
             bg_intro = _loop_to_duration(bg_intro, SHORTS_INTRO_DURATION)
-            bg_intro = bg_intro.with_volume_scaled(0.4).with_start(0)
+            bg_intro = bg_intro.with_volume_scaled(0.3).with_start(0)
             audio_clips.append(bg_intro)
+        if intro_tts_path and intro_tts_path.exists():
+            try:
+                tts_clip = AudioFileClip(str(intro_tts_path))
+                tts_clip = tts_clip.with_volume_scaled(0.9).with_start(tts_start_offset)
+                audio_clips.append(tts_clip)
+            except Exception:  # noqa: BLE001
+                logger.exception("Failed to load intro TTS audio clip")
 
-        # Performer slides: each gets their own song (fade in / fade out within the slide window)
+        # Performer slides: song at reduced volume + voice-over on top
         performer_offset = SHORTS_INTRO_DURATION
-        for _slide_path, slide_duration, song in performer_entries:
+        for idx, (_slide_path, slide_duration, song, _voiceover) in enumerate(performer_entries):
             song_path = download_performer_song_audio(song) if song else None
             if song_path and song_path.exists():
                 try:
@@ -1529,6 +1583,7 @@ def _generate_playlist_video_shorts(  # noqa: PLR0913, PLR0915, C901
                             afx.AudioFadeOut(SHORTS_AUDIO_FADE_DURATION),
                         ]
                     )
+                    perf_audio = perf_audio.with_volume_scaled(0.25)
                     audio_clips.append(perf_audio.with_start(performer_offset))
                     logger.info(f"Added audio for {song.performer.name} at t={performer_offset:.1f}s")
                 except Exception:  # noqa: BLE001
@@ -1538,10 +1593,21 @@ def _generate_playlist_video_shorts(  # noqa: PLR0913, PLR0915, C901
                 try:
                     bg_seg = AudioFileClip(str(background_music_path))
                     bg_seg = _loop_to_duration(bg_seg, slide_duration)
-                    bg_seg = bg_seg.with_volume_scaled(0.4).with_start(performer_offset)
+                    bg_seg = bg_seg.with_volume_scaled(0.3).with_start(performer_offset)
                     audio_clips.append(bg_seg)
                 except Exception:  # noqa: BLE001
                     logger.exception("Failed to add fallback background segment")
+
+            # Voice-over for this performer slide
+            tts_path = performer_tts_paths[idx] if idx < len(performer_tts_paths) else None
+            if tts_path and tts_path.exists():
+                try:
+                    tts_clip = AudioFileClip(str(tts_path))
+                    tts_clip = tts_clip.with_volume_scaled(0.9).with_start(performer_offset + tts_start_offset)
+                    audio_clips.append(tts_clip)
+                except Exception:  # noqa: BLE001
+                    logger.exception(f"Failed to load TTS audio for performer index {idx}")
+
             performer_offset += slide_duration
 
         # Closing: background music with fade-out
@@ -1581,6 +1647,7 @@ def _generate_playlist_video_shorts(  # noqa: PLR0913, PLR0915, C901
 def generate_playlist_video_shorts(playlist: MonthlyPlaylist, max_performers: int = SHORTS_MAX_PERFORMERS) -> Path:
     """Generate a YouTube Shorts (9:16, ≤60s) video for a monthly playlist."""
     month_start = playlist.date
+    intro_voiceover = f"Bands playing in {month_start.strftime('%B')}"
     return _generate_playlist_video_shorts(
         playlist=playlist,
         entry_set_name="monthlyplaylistentry_set",
@@ -1591,6 +1658,7 @@ def generate_playlist_video_shorts(playlist: MonthlyPlaylist, max_performers: in
         filename_prefix="playlist_shorts_",
         timestamp_format="%Y%m",
         max_performers=max_performers,
+        intro_voiceover=intro_voiceover,
     )
 
 
@@ -1600,14 +1668,16 @@ def generate_weekly_playlist_video_shorts(
 ) -> Path:
     """Generate a YouTube Shorts (9:16, ≤60s) video for a weekly playlist."""
     week_start = playlist.date
+    intro_voiceover = f"Bands playing the week of {week_start.strftime('%B')} {_ordinal_day(week_start.day)}"
     return _generate_playlist_video_shorts(
         playlist=playlist,
         entry_set_name="weeklyplaylistentry_set",
         date_start=week_start,
         date_end=week_start + timezone.timedelta(days=7),
-        title_label=f"Week of {playlist.date.strftime('%Y-%m-%d')}",
+        title_label=f"WEEK / {week_start.strftime('%b %-d').upper()}",
         closing_text="See You Next Week!",
         filename_prefix="playlist_shorts_week_",
         timestamp_format="%Y%m%d",
         max_performers=max_performers,
+        intro_voiceover=intro_voiceover,
     )
