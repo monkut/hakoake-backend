@@ -7,7 +7,7 @@ jobs:
       - image: cimg/python:3.13
         environment:
           AWS_PROFILE: dummyprofile
-        steps:
+    steps:
       - checkout
       - run: sudo chown -R circleci:circleci /usr/local/bin
       - restore_cache:
@@ -31,6 +31,22 @@ jobs:
           name: code checks (ruff)
           command: |
             uv run poe check
+
+  secret-scan:
+    working_directory: ~/app/
+    docker:
+      - image: cimg/python:3.13
+    steps:
+      - checkout
+      - run:
+          name: Install gitleaks
+          command: |
+            curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz \
+              | sudo tar xz -C /usr/local/bin gitleaks
+      - run:
+          name: Scan for secrets (gitleaks)
+          command: |
+            gitleaks detect --source . --redact --verbose
 
   test:
     working_directory: ~/app/
@@ -159,7 +175,9 @@ jobs:
           name: Upgrade pip & uv & install boto3
           command: |
             pip install pip -U
-            pip install uv -Upip install boto3- run:
+            pip install uv -U
+            pip install boto3
+      - run:
           name: install locked dependencies
           environment:
             PIP_NO_BINARY: pydantic
@@ -167,7 +185,9 @@ jobs:
             uv sync --no-dev
       - save_cache:
           key: deps-v1-{{ .Branch }}-deploy-{{ checksum "uv.lock" }}
-          paths:- "/home/circleci/.aws"- "/home/circleci/.profile"
+          paths:
+            - "/home/circleci/.aws"
+            - "/home/circleci/.profile"
             - "/home/circleci/.local"
             - "/usr/local/bin"
 
@@ -221,6 +241,7 @@ workflows:
   ProjectWorkflow:
     jobs:
       - check
+      - secret-scan
       - test
       - build-package:
           requires:
@@ -233,6 +254,7 @@ workflows:
           context: "github release context"
           requires:
             - check
+            - secret-scan
             - build-package
           filters:
             branches:
