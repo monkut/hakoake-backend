@@ -472,8 +472,11 @@ def _generate_introduction_text(  # noqa: C901, PLR0912, PLR0915
     entry_count = len(playlist_entries)
 
     user_query = [
-        f"For {period_label} write an introduction to selected artists below, describing where and when they will play."
-        "ALWAYS mention the date and day of the week when introduction where/when the artists play."
+        f"For {period_label} write an introduction to selected artists below, "
+        "describing where and when they will perform live."
+        "ALWAYS mention the date and day of the week when introducing where/when the artists perform live."
+        "IMPORTANT: The listed song is a SAMPLE only — do NOT say or imply the song will be performed. "
+        "The artist may play a completely different setlist."
         "The site's description is as follows (DO NOT INCLUDE it in the result response, but consider it for flavor):\n"
         "Can't see the artist for your seat? Ditch the arenas and stadiums.\n"
         'Your new favorite band is playing in dark cramped basement bars, or "Live Houses".\n'
