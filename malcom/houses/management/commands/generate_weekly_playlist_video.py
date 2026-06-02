@@ -13,7 +13,7 @@ from houses.functions import (
     generate_weekly_playlist_video_shorts,
     generate_weekly_playlist_video_story,
 )
-from houses.models import WeeklyPlaylist
+from houses.models import PerformanceSchedule, WeeklyPlaylist
 
 VIDEO_FORMAT_STANDARD = "standard"
 VIDEO_FORMAT_SHORTS = "shorts"
@@ -139,7 +139,25 @@ class Command(BaseCommand):
 
             # Post playlist description as a comment on the shorts video
             entries = playlist.weeklyplaylistentry_set.select_related("song__performer").order_by("position")
-            lineup_lines = [f"{e.position}. {e.song.performer.name}" for e in entries]
+            date_start = playlist.date
+            date_end = date_start + timezone.timedelta(days=7)
+            lineup_lines = []
+            for e in entries:
+                performer = e.song.performer
+                performance = (
+                    PerformanceSchedule.objects.filter(
+                        performers=performer,
+                        performance_date__gte=date_start,
+                        performance_date__lt=date_end,
+                    )
+                    .select_related("live_house")
+                    .first()
+                )
+                line = f"{e.position}. {performer.name}"
+                if performance:
+                    date_label = performance.performance_date.strftime("%b %-d")
+                    line += f" @ {performance.live_house.name} — {date_label}"
+                lineup_lines.append(line)
             comment_text = f"Bands playing the week of {week_str}\n\n" + "\n".join(lineup_lines)
             if playlist.youtube_playlist_url:
                 comment_text += f"\n\nPlaylist: {playlist.youtube_playlist_url}"
