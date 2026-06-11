@@ -25,7 +25,13 @@ Python: 3.13
     uv sync
     ```
 
-3. Install Playwright browsers (required for JavaScript-enabled web scraping):
+3. Install the Noto CJK system fonts (required for slide rendering — without them Japanese text in generated slides renders as tofu `□`; startup logs a CRITICAL message if no CJK-capable font is found):
+
+    ```bash
+    sudo apt install fonts-noto-cjk
+    ```
+
+4. Install Playwright browsers (required for JavaScript-enabled web scraping):
 
     ```bash
     uv run playwright install

@@ -7,6 +7,9 @@ both the Instagram carousel and the playlist video pipelines.
 
 from __future__ import annotations
 
+from pathlib import Path
+from unittest import mock
+
 from django.test import TestCase
 from PIL import Image, ImageDraw
 
@@ -23,6 +26,7 @@ from commons.design import (
     draw_torn_edge,
     paper_grain,
     scale_to_fill,
+    verify_cjk_font_available,
     wrap_text,
 )
 
@@ -116,3 +120,38 @@ class TestLayoutHelpers(TestCase):
         draw = ImageDraw.Draw(img)
         for anchor in ("lt", "rt", "lb", "rb"):
             draw_corner_wordmark(draw, (200, 200), anchor=anchor)
+
+
+class TestVerifyCjkFontAvailable(TestCase):
+    DEJAVU_ONLY = ((Path("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"), None),)
+    ALL_MISSING = ((Path("/nonexistent/NoSuchFont-Bold.ttc"), 0),)
+
+    def test_passes_in_normal_environment(self) -> None:
+        """With Noto CJK / Shippori installed (dev and CI baseline) the check passes."""
+        self.assertTrue(verify_cjk_font_available())
+
+    def test_fails_when_only_latin_fallback_resolves(self) -> None:
+        """If every CJK face is missing and only DejaVu resolves, the check logs CRITICAL.
+
+        This is the silent-tofu scenario this check exists for: the fallback
+        chain still "succeeds" but Japanese text renders as .notdef boxes.
+        """
+        with (
+            mock.patch("commons.design._DISPLAY_FALLBACKS", self.DEJAVU_ONLY),
+            mock.patch("commons.design._BODY_BOLD_FALLBACKS", self.DEJAVU_ONLY),
+            mock.patch("commons.design._BODY_REGULAR_FALLBACKS", self.DEJAVU_ONLY),
+            self.assertLogs("commons.design", level="CRITICAL") as captured,
+        ):
+            self.assertFalse(verify_cjk_font_available())
+        self.assertIn("fonts-noto-cjk", captured.output[0])
+        self.assertIn("display", captured.output[0])
+
+    def test_fails_when_no_font_resolves_at_all(self) -> None:
+        """If no chain entry resolves (PIL default bitmap font), the check still fails."""
+        with (
+            mock.patch("commons.design._DISPLAY_FALLBACKS", self.ALL_MISSING),
+            mock.patch("commons.design._BODY_BOLD_FALLBACKS", self.ALL_MISSING),
+            mock.patch("commons.design._BODY_REGULAR_FALLBACKS", self.ALL_MISSING),
+            self.assertLogs("commons.design", level="CRITICAL"),
+        ):
+            self.assertFalse(verify_cjk_font_available())
