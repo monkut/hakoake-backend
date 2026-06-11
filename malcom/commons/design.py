@@ -105,6 +105,59 @@ def body_font(size: int, *, bold: bool = False) -> ImageFont.FreeTypeFont | Imag
     return _load_font(_BODY_BOLD_FALLBACKS if bold else _BODY_REGULAR_FALLBACKS, size)
 
 
+# --- CJK availability check ---
+# The final fallback in every chain (DejaVu) is Latin-only, so if every CJK face
+# is missing the chains still "succeed" and Japanese text silently renders as
+# tofu (□). verify_cjk_font_available makes that failure loud at startup.
+_CJK_PROBE_GLYPH = "あ"  # hiragana 'a' — any Japanese-capable face must map it
+_UNMAPPED_PROBE_GLYPH = "￾"  # Unicode noncharacter — no font maps it, always renders .notdef
+_CJK_PROBE_SIZE = 32
+
+
+def _render_probe_glyph(font: ImageFont.FreeTypeFont | ImageFont.ImageFont, char: str) -> bytes:
+    """Render a single glyph onto a fixed canvas and return the raw pixel bytes."""
+    canvas = Image.new("L", (_CJK_PROBE_SIZE * 2, _CJK_PROBE_SIZE * 2), 0)
+    ImageDraw.Draw(canvas).text((4, 4), char, font=font, fill=255)
+    return canvas.tobytes()
+
+
+def _renders_cjk(font: ImageFont.FreeTypeFont | ImageFont.ImageFont) -> bool:
+    """Return True if the font draws the CJK probe glyph as a real glyph, not .notdef tofu.
+
+    A font without a glyph for a codepoint renders its .notdef shape instead.
+    U+FFFE is a noncharacter no font maps, so its rendering IS the .notdef shape -
+    if the CJK probe glyph renders identically, the font cannot draw Japanese.
+    """
+    try:
+        return _render_probe_glyph(font, _CJK_PROBE_GLYPH) != _render_probe_glyph(font, _UNMAPPED_PROBE_GLYPH)
+    except OSError:
+        return False
+
+
+def verify_cjk_font_available() -> bool:
+    """Verify every font fallback chain resolves to a CJK-capable face.
+
+    Logs CRITICAL naming the failing chain(s) and returns False when Japanese
+    text would render as tofu - e.g. the ``fonts-noto-cjk`` system package is
+    not installed. Called from ``CommonsConfig.ready()`` so a broken font
+    install is loud at startup instead of discovered in published slides.
+    """
+    chains = (
+        ("display", _DISPLAY_FALLBACKS),
+        ("body-bold", _BODY_BOLD_FALLBACKS),
+        ("body-regular", _BODY_REGULAR_FALLBACKS),
+    )
+    failed = [name for name, chain in chains if not _renders_cjk(_load_font(chain, _CJK_PROBE_SIZE))]
+    if failed:
+        logger.critical(
+            "No CJK-capable font resolved for font chain(s): %s - "
+            "Japanese text will render as tofu. Install the 'fonts-noto-cjk' system package.",
+            ", ".join(failed),
+        )
+        return False
+    return True
+
+
 # --- Layout helpers ---
 
 
