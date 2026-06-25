@@ -9,9 +9,11 @@ from .daisy_bar import DaisyBarCrawler
 from .rockmaykan import RockmaykanCrawler
 from .club_que import ClubQueCrawler
 from .garret import GarretCrawler
+from .cyclone import CycloneCrawler
 from .fever_popo import FeverPopoCrawler
 from .shibuya_o_nest import ShibuyaONestCrawler
 from .pit_zero import PitZeroCrawler
+from .club_quattro import ClubQuattroCrawler
 from .shinjuku_face import ShinjukuFaceCrawler
 
 __all__ = [
@@ -27,8 +29,10 @@ __all__ = [
     "RockmaykanCrawler",
     "ClubQueCrawler",
     "GarretCrawler",
+    "CycloneCrawler",
     "FeverPopoCrawler",
     "ShibuyaONestCrawler",
     "PitZeroCrawler",
+    "ClubQuattroCrawler",
     "ShinjukuFaceCrawler",
 ]
