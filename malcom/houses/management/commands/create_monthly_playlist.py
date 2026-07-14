@@ -199,7 +199,7 @@ class Command(BaseCommand):
         # Create YouTube playlist
         month_name = target_date.strftime("%B").upper()
         year = target_date.strftime("%Y")
-        playlist_title = f"HAKKO-AKKEI {month_name} {year} TOKYO Playlist Introduction"
+        playlist_title = f"HK0-AK3 {month_name} {year} TOKYO Playlist Introduction"
         month_name = target_date.strftime("%B")
         playlist_description = build_playlist_description(f"{month_name} {year}", "\n".join(lineup_lines))
 

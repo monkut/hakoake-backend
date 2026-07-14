@@ -77,7 +77,7 @@ Describe the selection criteria:
   - Repetitive phrases across performer sections (e.g., repeating "don't miss out", "first time", etc.)
   - Words: 'excited', 'exciting', 'grab', 'underground', 'vibrant'
   - Stating or implying that the playlist sample song will be performed live — the selected song is a SAMPLE only; the artist may perform a completely different setlist. NEVER say a song "will be performed" or "will play" in reference to the playlist song.
-  - DO NOT pronounce the site (HAKKO-AKKEI/HAKOAKE), use 'we' instead.
+  - DO NOT pronounce the site (HK0-AK3/HAKOAKE), use 'we' instead.
 
 ### What Makes a Great Introduction
 

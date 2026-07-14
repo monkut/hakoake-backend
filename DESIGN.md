@@ -1,4 +1,4 @@
-# HAKKO-AKKEI Design System
+# HK0-AK3 Design System
 
 Single source of truth for the visual language of every slide hakoake-backend
 generates: Instagram carousel posts (1080×1080) and YouTube playlist videos
@@ -95,7 +95,7 @@ All in `commons/design.py`:
   draw a randomized torn-paper edge across the canvas; everything above
   `y` becomes the target color.
 - `draw_corner_wordmark(draw, position, *, anchor, color, size)` — draw the
-  minimal HAKKO-AKKEI corner mark + tagline. **This is the only place the
+  minimal HK0-AK3 corner mark + tagline. **This is the only place the
   wordmark string lives.** If the brand spelling changes, change it once
   in `BRAND_WORDMARK` / `BRAND_TAGLINE` in `commons/design.py`.
 
@@ -118,7 +118,7 @@ In `malcom/houses/functions.py`:
 
 | Function | Purpose |
 |----------|---------|
-| `render_video_intro_slide` | Editorial header (HAKKO-AKKEI / period label) over the brand bg. Two-column numbered lineup, vermillion numerals + cream names, ★ for spotlights. |
+| `render_video_intro_slide` | Editorial header (HK0-AK3 / period label) over the brand bg. Two-column numbered lineup, vermillion numerals + cream names, ★ for spotlights. |
 | `render_video_performer_slide` | Left column: oversized position numeral, display-serif name, romaji, song title, venue/date. Right column: up to two cream QR cards (artist + venue), each labeled. |
 | `render_video_closing_slide` | Big display-serif closing message. Centered cream QR card linking the YouTube channel. Music credit beneath, in INK_GRAY. |
 

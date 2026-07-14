@@ -311,7 +311,7 @@ def draw_torn_edge(
 # Keep this minimal and corner-placed per the design decision to minimize
 # branding. This is the ONLY place the wordmark string lives — if the
 # brand spelling changes later, change it here.
-BRAND_WORDMARK = "HAKKO-AKKEI"
+BRAND_WORDMARK = "HK0-AK3"
 BRAND_TAGLINE = "TOKYO LIVE HOUSES"
 
 

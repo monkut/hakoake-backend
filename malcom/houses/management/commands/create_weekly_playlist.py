@@ -329,7 +329,7 @@ class Command(BaseCommand):
 
         # Create YouTube playlist
         week_date_str = target_date.strftime("%Y-%m-%d")
-        playlist_title = f"HAKKO-AKKEI WEEK {week_date_str} TOKYO Playlist"
+        playlist_title = f"HK0-AK3 WEEK {week_date_str} TOKYO Playlist"
         playlist_description = build_playlist_description(f"week of {week_date_str}", "\n".join(lineup_lines))
 
         try:

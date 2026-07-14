@@ -119,7 +119,7 @@ class Command(BaseCommand):
                 return
 
             week_str = playlist.date.strftime("%Y-%m-%d")
-            shorts_title = f"HAKKO-AKKEI WEEK {week_str} TOKYO Shorts"
+            shorts_title = f"HK0-AK3 WEEK {week_str} TOKYO Shorts"
             shorts_description = f"Weekly lineup for the week of {week_str}."
             if playlist.youtube_playlist_url:
                 shorts_description += f"\nPlaylist: {playlist.youtube_playlist_url}"
@@ -325,7 +325,7 @@ class Command(BaseCommand):
 
         # Upload video to YouTube
         week_str = playlist.date.strftime("%Y-%m-%d")
-        video_title = f"HAKKO-AKKEI WEEK {week_str} TOKYO Playlist Introduction"
+        video_title = f"HK0-AK3 WEEK {week_str} TOKYO Playlist Introduction"
         video_description = (
             f"Weekly playlist introduction for the week of {week_str}.\nPlaylist: {playlist.youtube_playlist_url}"
         )
