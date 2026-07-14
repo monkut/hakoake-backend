@@ -31,7 +31,7 @@ from commons.design import (
 )
 
 JAPANESE_SAMPLE = "残響のリフレイン"
-LATIN_SAMPLE = "HAKKO-AKKEI"
+LATIN_SAMPLE = "HK0-AK3"
 
 
 def _text_width(font: object, text: str) -> int:

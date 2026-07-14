@@ -601,7 +601,7 @@ def render_video_intro_slide(
     """Render the opening slide of a playlist video.
 
     Layout:
-      - Editorial header in display serif (HAKKO-AKKEI / TOKYO LIVE HOUSES + period)
+      - Editorial header in display serif (HK0-AK3 / TOKYO LIVE HOUSES + period)
       - Two-column numbered lineup with vermillion numerals + cream names
       - Spotlighted performers get a small ★ marker after the name
     """
@@ -611,7 +611,7 @@ def render_video_intro_slide(
 
     # --- Header ---
     label_font = body_font(28, bold=True)
-    draw.text((SP_XL, SP_LG), "HAKKO-AKKEI // TOKYO LIVE HOUSES", font=label_font, fill=INK_GRAY)
+    draw.text((SP_XL, SP_LG), "HK0-AK3 // TOKYO LIVE HOUSES", font=label_font, fill=INK_GRAY)
 
     title_font = display_font(96)
     draw.text((SP_XL, SP_LG + 48), title_label, font=title_font, fill=AGED_CREAM)
@@ -787,7 +787,7 @@ def render_video_closing_slide(closing_text: str, channel_url: str) -> Image.Ima
     label_font = body_font(28, bold=True)
     draw.text(
         (video_w // 2, SP_LG),
-        "HAKKO-AKKEI // SUBSCRIBE",
+        "HK0-AK3 // SUBSCRIBE",
         font=label_font,
         fill=INK_GRAY,
         anchor="mt",
@@ -968,7 +968,7 @@ def render_shorts_intro_slide(
     video_w, video_h = VIDEO_SHORTS
 
     label_font = body_font(28, bold=True)
-    draw.text((SP_LG, SP_LG), "HAKKO-AKKEI // TOKYO LIVE HOUSES", font=label_font, fill=INK_GRAY)
+    draw.text((SP_LG, SP_LG), "HK0-AK3 // TOKYO LIVE HOUSES", font=label_font, fill=INK_GRAY)
 
     title_font = display_font(96)
     title_y = SP_LG + 48
@@ -1161,7 +1161,7 @@ def render_shorts_closing_slide(closing_text: str, channel_url: str) -> Image.Im
     video_w, video_h = VIDEO_SHORTS
 
     label_font = body_font(28, bold=True)
-    draw.text((video_w // 2, SP_LG), "HAKKO-AKKEI // SUBSCRIBE", font=label_font, fill=INK_GRAY, anchor="mt")
+    draw.text((video_w // 2, SP_LG), "HK0-AK3 // SUBSCRIBE", font=label_font, fill=INK_GRAY, anchor="mt")
 
     # Thick rule divider (DIY flyer aesthetic)
     draw.rectangle([(SP_LG, SP_LG + 48), (video_w - SP_LG, SP_LG + 51)], fill=FLYER_RED)

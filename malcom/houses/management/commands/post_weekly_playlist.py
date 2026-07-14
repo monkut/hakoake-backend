@@ -216,7 +216,7 @@ class Command(BaseCommand):
 
         # --- Cover slide (lists every entry, not just the truncated set) ---
         cover_entries = [(e.position, e.song.performer.name) for e in all_entries]
-        title = f"HAKKO-AKKEI WEEK {week_start.strftime('%Y-%m-%d')} TOKYO Playlist"
+        title = f"HK0-AK3 WEEK {week_start.strftime('%Y-%m-%d')} TOKYO Playlist"
         cover_bytes = generate_playlist_cover(title, week_label, cover_entries)
         self.stdout.write(f"Generated cover image ({len(cover_bytes):,} bytes)")
         images: list[tuple[bytes, str]] = [(cover_bytes, "cover.jpg")]
