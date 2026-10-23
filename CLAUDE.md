@@ -71,6 +71,19 @@ This project uses `ruff` with `select = ["ALL"]`. Tests must follow these rules 
 value=$(uv run python manage.py my_command --json | jq -r '.field')
 ```
 
+## Instagram carousel image hosts
+
+Instagram's `image_url` / `video_url` publishing needs every slide on a public HTTPS URL
+first. `commons.functions.upload_to_public_image_host()` tries the hosts named in
+`settings.IMAGE_HOST_PROVIDERS` in order and raises `ImageHostUploadError` only when all
+fail. Default chain: `litterbox` (litterbox.catbox.moe, 1h TTL) then `uguu` (uguu.se,
+independently operated, 3h TTL). Override without a code change:
+```bash
+IMAGE_HOST_PROVIDERS=uguu,litterbox   # comma separated; names from IMAGE_HOST_PROVIDERS_AVAILABLE
+```
+Add a provider by writing an `upload_to_<host>(bytes, filename) -> https URL` function that
+raises a subclass of `ImageHostUploadError`, and adding its name to `IMAGE_HOST_PROVIDERS_AVAILABLE`.
+
 ## Design System
 
 All Instagram carousel slides and playlist video slides share a single

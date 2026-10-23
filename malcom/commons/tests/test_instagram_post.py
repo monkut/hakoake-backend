@@ -7,9 +7,10 @@ is no longer referenced.
 
 from unittest.mock import MagicMock, patch
 
-from django.test import TestCase
+from django.test import TestCase, override_settings
 
 from commons import instagram_post
+from commons.functions import LITTERBOX_API_URL
 from commons.instagram_post import (
     InstagramContainerError,
     post_carousel,
@@ -64,7 +65,7 @@ class TestPostCarousel(TestCase):
     @patch("commons.instagram_post.wait_for_container_finished", return_value=None)
     @patch("commons.instagram_post.create_carousel_container", return_value="parent-99")
     @patch("commons.instagram_post.create_carousel_item")
-    @patch("commons.instagram_post.upload_to_litterbox")
+    @patch("commons.instagram_post.upload_to_public_image_host")
     def test_end_to_end_happy_path(
         self,
         mock_upload: MagicMock,
@@ -103,6 +104,39 @@ class TestPostCarousel(TestCase):
             "hello world",
         )
         mock_publish.assert_called_once_with("17841441683497898", "tok", "parent-99")
+
+    @patch("commons.instagram_post.publish_media", return_value="post-12345")
+    @patch("commons.instagram_post.wait_for_container_finished", return_value=None)
+    @patch("commons.instagram_post.create_carousel_container", return_value="parent-99")
+    @patch("commons.instagram_post.create_carousel_item", side_effect=["c1", "c2"])
+    @patch("commons.functions.requests.post")
+    def test_end_to_end_when_primary_image_host_is_down(
+        self,
+        mock_post: MagicMock,
+        mock_create_item: MagicMock,
+        mock_create_container: MagicMock,
+        mock_wait: MagicMock,
+        mock_publish: MagicMock,
+    ) -> None:
+        """AC: the carousel publishes when the primary host fails and a fallback host is available."""
+
+        def fake_post(url: str, **_kwargs: object) -> MagicMock:
+            if url == LITTERBOX_API_URL:
+                return MagicMock(status_code=500, text="Internal Server Error")
+            return MagicMock(
+                status_code=200, json=lambda: {"success": True, "files": [{"url": "https://d.uguu.se/x.jpg"}]}
+            )
+
+        mock_post.side_effect = fake_post
+
+        with override_settings(IMAGE_HOST_PROVIDERS=("litterbox", "uguu")):
+            post_id = post_carousel("u", "t", [(b"a", "a.jpg"), (b"b", "b.jpg")], "caption")
+
+        self.assertEqual(post_id, "post-12345")
+        self.assertEqual(mock_post.call_count, 4)  # two slides x (litterbox fails, uguu succeeds)
+        self.assertEqual(mock_create_item.call_count, 2)
+        mock_create_item.assert_any_call("u", "t", "https://d.uguu.se/x.jpg")
+        mock_publish.assert_called_once_with("u", "t", "parent-99")
 
     def test_rejects_too_few_images(self) -> None:
         with self.assertRaises(ValueError):

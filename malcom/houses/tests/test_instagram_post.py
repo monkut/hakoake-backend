@@ -81,7 +81,7 @@ class TestPostCarousel(TestCase):
     @patch("commons.instagram_post.create_carousel_container", return_value="container_99")
     @patch("commons.instagram_post.create_carousel_item", side_effect=["child_1", "child_2"])
     @patch(
-        "commons.instagram_post.upload_to_litterbox",
+        "commons.instagram_post.upload_to_public_image_host",
         side_effect=["https://litter.catbox.moe/a.jpg", "https://litter.catbox.moe/b.jpg"],
     )
     def test_full_flow_returns_post_id(
