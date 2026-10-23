@@ -2,6 +2,9 @@
 
 import datetime
 import logging
+import mimetypes
+from collections.abc import Callable, Sequence
+from http import HTTPStatus
 
 import requests
 
@@ -10,12 +13,22 @@ YYYY_MM_DD_LENGTH = 10
 
 LITTERBOX_API_URL = "https://litterbox.catbox.moe/resources/internals/api.php"
 LITTERBOX_TTL = "1h"
+UGUU_API_URL = "https://uguu.se/upload"
+UPLOAD_TIMEOUT_SECONDS = 60
 
 logger = logging.getLogger(__name__)
 
 
-class LitterboxUploadError(RuntimeError):
+class ImageHostUploadError(RuntimeError):
+    """Raised when a public image-host upload fails (any provider)."""
+
+
+class LitterboxUploadError(ImageHostUploadError):
     """Raised when a litterbox.catbox.moe upload fails."""
+
+
+class UguuUploadError(ImageHostUploadError):
+    """Raised when a uguu.se upload fails."""
 
 
 def upload_to_litterbox(image_bytes: bytes, filename: str = "image.jpg") -> str:
@@ -34,12 +47,12 @@ def upload_to_litterbox(image_bytes: bytes, filename: str = "image.jpg") -> str:
             LITTERBOX_API_URL,
             data={"reqtype": "fileupload", "time": LITTERBOX_TTL},
             files={"fileToUpload": (filename, image_bytes, "image/jpeg")},
-            timeout=60,
+            timeout=UPLOAD_TIMEOUT_SECONDS,
         )
     except requests.RequestException as exc:
         raise LitterboxUploadError(f"litterbox upload failed for {filename!r}: {exc}") from exc
 
-    if response.status_code != 200:  # noqa: PLR2004
+    if response.status_code != HTTPStatus.OK:
         raise LitterboxUploadError(
             f"litterbox upload failed for {filename!r}: HTTP {response.status_code} — {response.text[:200]}"
         )
@@ -50,6 +63,92 @@ def upload_to_litterbox(image_bytes: bytes, filename: str = "image.jpg") -> str:
 
     logger.debug(f"Uploaded {filename!r} to litterbox: {url}")
     return url
+
+
+def upload_to_uguu(image_bytes: bytes, filename: str = "image.jpg") -> str:
+    """Upload bytes to uguu.se anonymously and return the public HTTPS URL.
+
+    uguu.se is operated independently of catbox.moe, so it stays up when the whole
+    catbox/litterbox vendor is down (the class of failure behind #48). Files are
+    deleted after 3 hours. Accepts a multipart POST with a ``files[]`` field and
+    answers JSON: ``{"success": true, "files": [{"url": "https://d.uguu.se/..."}]}``.
+    No API key or signup required. The content type is guessed from ``filename``.
+    """
+    content_type = mimetypes.guess_type(filename)[0] or "application/octet-stream"
+    try:
+        response = requests.post(
+            UGUU_API_URL,
+            files={"files[]": (filename, image_bytes, content_type)},
+            timeout=UPLOAD_TIMEOUT_SECONDS,
+        )
+    except requests.RequestException as exc:
+        raise UguuUploadError(f"uguu upload failed for {filename!r}: {exc}") from exc
+
+    if response.status_code != HTTPStatus.OK:
+        raise UguuUploadError(
+            f"uguu upload failed for {filename!r}: HTTP {response.status_code} — {response.text[:200]}"
+        )
+
+    try:
+        payload = response.json()
+        url = payload["files"][0]["url"] if payload.get("success") else ""
+    except (ValueError, KeyError, IndexError, TypeError) as exc:
+        raise UguuUploadError(f"uguu returned unexpected response for {filename!r}: {exc}") from exc
+
+    if not isinstance(url, str) or not url.startswith("https://"):
+        raise UguuUploadError(f"uguu returned unexpected response for {filename!r}: {url!r}"[:300])
+
+    logger.debug(f"Uploaded {filename!r} to uguu: {url}")
+    return url
+
+
+# Each name has an ``upload_to_<name>(bytes, filename) -> https URL`` function in this module.
+IMAGE_HOST_PROVIDERS_AVAILABLE = ("litterbox", "uguu")
+
+
+def _uploader(name: str) -> Callable[[bytes, str], str]:
+    """Resolve the provider function at call time, so ``commons.functions.upload_to_<name>`` can be patched."""
+    return globals()[f"upload_to_{name}"]
+
+
+def upload_to_public_image_host(
+    image_bytes: bytes,
+    filename: str = "image.jpg",
+    providers: Sequence[str] | None = None,
+) -> str:
+    """Upload bytes to the first working public image host and return its HTTPS URL.
+
+    ``providers`` names entries of ``IMAGE_HOST_PROVIDERS_AVAILABLE`` and defaults to
+    ``settings.IMAGE_HOST_PROVIDERS`` (env ``IMAGE_HOST_PROVIDERS``, comma separated).
+    Each provider is tried once, in order; a failure is logged at WARNING and the
+    next provider is tried. When every provider fails, ``ImageHostUploadError`` is
+    raised with each provider's reason, chained to the last failure.
+    """
+    if providers is None:
+        from django.conf import settings  # noqa: PLC0415 — keep commons.functions importable without Django
+
+        names: Sequence[str] = tuple(settings.IMAGE_HOST_PROVIDERS)
+    else:
+        names = tuple(providers)
+
+    unknown = [name for name in names if name not in IMAGE_HOST_PROVIDERS_AVAILABLE]
+    if unknown or not names:
+        raise ValueError(
+            f"IMAGE_HOST_PROVIDERS must name at least one of {list(IMAGE_HOST_PROVIDERS_AVAILABLE)}; "
+            f"got {list(names)!r} (unknown: {unknown!r})"
+        )
+
+    failures: list[str] = []
+    last_error: ImageHostUploadError | None = None
+    for name in names:
+        try:
+            return _uploader(name)(image_bytes, filename)
+        except ImageHostUploadError as exc:
+            logger.warning(f"image host {name!r} failed for {filename!r} ({type(exc).__name__}): {exc}")
+            failures.append(f"{name}: {exc}")
+            last_error = exc
+
+    raise ImageHostUploadError(f"all image hosts failed for {filename!r}: " + "; ".join(failures)) from last_error
 
 
 def get_month_end(month_start: datetime.date) -> datetime.date:

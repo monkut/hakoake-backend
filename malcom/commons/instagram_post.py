@@ -5,12 +5,13 @@ static images on the IGwIL API surface — `rupload.facebook.com/ig-api-upload` 
 reels/video only and rejects image uploads with `400 NotAuthorizedError`.
 
 Each carousel slide must therefore be hosted on a publicly fetchable HTTPS URL
-before container creation. We host on litterbox.catbox.moe (free, no signup,
-temporary 1h URLs — long enough for Instagram's async fetch, short enough to
-avoid permanent hosting of transient content).
+before container creation. We host on a short-lived public image host (default
+chain: litterbox.catbox.moe, then uguu.se — see ``settings.IMAGE_HOST_PROVIDERS``;
+free, no signup, temporary URLs — long enough for Instagram's async fetch, short
+enough to avoid permanent hosting of transient content).
 
 Publish flow:
-  1. Upload each JPEG to litterbox.catbox.moe → public HTTPS URL (1h TTL)
+  1. Upload each JPEG to the first working image host → public HTTPS URL
   2. Create child container per slide (`is_carousel_item=true`, `image_url=...`)
   3. Poll each child container until `status_code == FINISHED`
   4. Create the parent CAROUSEL container with the children IDs and caption
@@ -28,7 +29,7 @@ import time
 
 import requests
 
-from commons.functions import upload_to_litterbox
+from commons.functions import upload_to_public_image_host
 
 INSTAGRAM_API_BASE = "https://graph.instagram.com/v22.0"
 
@@ -133,10 +134,10 @@ def post_carousel(
     if not 2 <= len(images) <= 10:  # noqa: PLR2004
         raise ValueError(f"Carousel requires 2-10 images, got {len(images)}")
 
-    # Step 1: upload each image to litterbox to obtain a public HTTPS URL (1h TTL)
+    # Step 1: upload each image to a public image host (with fallback) to obtain an HTTPS URL
     image_urls: list[tuple[str, str]] = []
     for jpeg_bytes, filename in images:
-        public_url = upload_to_litterbox(jpeg_bytes, filename)
+        public_url = upload_to_public_image_host(jpeg_bytes, filename)
         image_urls.append((public_url, filename))
 
     # Step 2: create one child container per uploaded image
@@ -183,7 +184,7 @@ def post_story(user_id: str, access_token: str, video_bytes: bytes, filename: st
         video_bytes: MP4 video file bytes (H.264, AAC audio, 9:16, ≤60s, ≤100MB)
         filename: Filename used when uploading to the CDN (e.g. "story_20250529.mp4")
     """
-    public_url = upload_to_litterbox(video_bytes, filename)
+    public_url = upload_to_public_image_host(video_bytes, filename)
     container_id = create_story_container(user_id, access_token, public_url)
     wait_for_container_finished(container_id, access_token)
     return publish_media(user_id, access_token, container_id)

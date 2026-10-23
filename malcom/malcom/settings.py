@@ -271,6 +271,12 @@ REQUIRED_BUCKETS = (AWS_S3_DATA_BUCKETNAME,)
 # YouTube settings
 YOUTUBE_CHANNEL_URL = os.getenv("CHANNEL_URL", "")
 
+# Public image hosts for Instagram publishing (commons.functions.IMAGE_HOST_UPLOADERS keys), tried in order.
+# litterbox is the primary; uguu is an independently operated fallback (#48).
+IMAGE_HOST_PROVIDERS = tuple(
+    name.strip() for name in os.getenv("IMAGE_HOST_PROVIDERS", "litterbox,uguu").split(",") if name.strip()
+)
+
 # Instagram settings (Instagram Login path — graph.instagram.com)
 INSTAGRAM_APP_ID = os.getenv("INSTAGRAM_APP_ID", "")
 INSTAGRAM_APP_SECRET = os.getenv("INSTAGRAM_APP_SECRET", "")
