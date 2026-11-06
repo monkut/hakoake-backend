@@ -17,6 +17,7 @@ from .club_quattro import ClubQuattroCrawler
 from .shinjuku_face import ShinjukuFaceCrawler
 from .seventh_floor import SeventhFloorCrawler
 from .warp import WarpCrawler
+from .grit_at_shibuya import GritAtShibuyaCrawler
 
 __all__ = [
     "LiveHouseWebsiteCrawler",
@@ -39,4 +40,5 @@ __all__ = [
     "ShinjukuFaceCrawler",
     "SeventhFloorCrawler",
     "WarpCrawler",
+    "GritAtShibuyaCrawler",
 ]
