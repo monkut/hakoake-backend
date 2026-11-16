@@ -37,13 +37,22 @@ class LoftProjectShelterCrawler(LiveHouseWebsiteCrawler):
 
         return info
 
-    def _extract_venue_name(self, soup: BeautifulSoup, info: dict) -> None:  # noqa: C901, PLR0912, PLR0915, PLR0911
-        """Extract venue name from page title."""
+    # Page-title marker -> (name, name_kana, name_romaji). The crawler serves several Loft Project venues.
+    VENUE_NAMES_BY_TITLE_MARKER = {
+        "SHELTER": ("Shimokitazawa SHELTER", "シモキタザワ シェルター", "Shimokitazawa SHELTER"),
+        "新宿LOFT": ("Shinjuku LOFT", "シンジュク ロフト", "Shinjuku LOFT"),
+    }
+
+    def _extract_venue_name(self, soup: BeautifulSoup, info: dict) -> None:
+        """Extract venue name from page title; leave it blank when the venue is not recognised."""
         title_tag = soup.find("title")
-        if title_tag and "SHELTER" in title_tag.get_text():
-            info["name"] = "Shimokitazawa SHELTER"
-            info["name_kana"] = "シモキタザワ シェルター"
-            info["name_romaji"] = "Shimokitazawa SHELTER"
+        title = title_tag.get_text() if title_tag else ""
+        for marker, (name, name_kana, name_romaji) in self.VENUE_NAMES_BY_TITLE_MARKER.items():
+            if marker in title:
+                info["name"] = name
+                info["name_kana"] = name_kana
+                info["name_romaji"] = name_romaji
+                return
 
     def _extract_address(self, soup: BeautifulSoup, info: dict) -> None:  # noqa: C901, PLR0912, PLR0915, PLR0911
         """Extract address information."""

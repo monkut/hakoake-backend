@@ -164,6 +164,47 @@ class TestLoftProjectShelterCrawler(TestCase):
         )
         self.crawler = LoftProjectShelterCrawler(self.website)
 
+    def test_extract_live_house_info_shelter_title(self):
+        """The SHELTER schedule page title yields the Shimokitazawa SHELTER names."""
+        title = "下北沢SHELTER｜音楽の街下北沢にあるライブハウス「下北沢シェルター」"
+        html = f"<html><head><title>{title}</title></head></html>"
+        info = self.crawler.extract_live_house_info(html)
+        self.assertEqual(info["name"], "Shimokitazawa SHELTER")
+        self.assertEqual(info["name_kana"], "シモキタザワ シェルター")
+        self.assertEqual(info["name_romaji"], "Shimokitazawa SHELTER")
+
+    def test_extract_live_house_info_loft_title(self):
+        """The Shinjuku LOFT schedule page title yields non-blank Shinjuku LOFT names (#150)."""
+        html = "<html><head><title>ROCKIN’ COMMUNICATION 新宿LOFT</title></head></html>"
+        info = self.crawler.extract_live_house_info(html)
+        self.assertEqual(info["name"], "Shinjuku LOFT")
+        self.assertEqual(info["name_kana"], "シンジュク ロフト")
+        self.assertEqual(info["name_romaji"], "Shinjuku LOFT")
+
+    def test_extract_live_house_info_unknown_title_leaves_names_blank(self):
+        """An unrecognised title leaves the names blank."""
+        html = "<html><head><title>LOFT PlusOne</title></head></html>"
+        info = self.crawler.extract_live_house_info(html)
+        self.assertEqual(info["name"], "")
+
+    def test_create_or_update_live_house_keeps_existing_names_when_blank(self):
+        """Blank crawled names do not overwrite existing non-blank names (#150)."""
+        LiveHouse.objects.create(
+            website=self.website,
+            name="Shinjuku LOFT",
+            name_kana="シンジュク ロフト",
+            name_romaji="Shinjuku LOFT",
+            address="Old Address",
+            capacity=500,
+            opened_date="1976-10-01",
+        )
+        data = {"name": "", "name_kana": "", "name_romaji": "", "address": "New Address", "capacity": 0}
+        live_house = self.crawler.create_or_update_live_house(data)
+        self.assertEqual(live_house.name, "Shinjuku LOFT")
+        self.assertEqual(live_house.name_kana, "シンジュク ロフト")
+        self.assertEqual(live_house.name_romaji, "Shinjuku LOFT")
+        self.assertEqual(live_house.address, "New Address")
+
     def test_extract_performance_schedules_date_parsing(self):
         """Test date parsing logic with year rollover."""
         # Mock it being December
