@@ -7,7 +7,10 @@ def add_grit_at_shibuya(apps, schema_editor):
     LiveHouseWebsite = apps.get_model("houses", "LiveHouseWebsite")
     LiveHouse = apps.get_model("houses", "LiveHouse")
 
-    website = LiveHouseWebsite.objects.get(id=22)
+    # Select by url, not id: ids differ between databases and a fresh/test DB has no row (#146).
+    website = LiveHouseWebsite.objects.filter(url__startswith="https://grit-live.jp").first()
+    if website is None:
+        return
     website.crawler_class = "GritAtShibuyaCrawler"
     website.schedule_url = "https://grit-live.jp/events"
     website.save(update_fields=["crawler_class", "schedule_url"])
@@ -30,7 +33,7 @@ def remove_grit_at_shibuya(apps, schema_editor):
 
     LiveHouse.objects.filter(name="GRIT at Shibuya").delete()
 
-    LiveHouseWebsite.objects.filter(id=22).update(
+    LiveHouseWebsite.objects.filter(url__startswith="https://grit-live.jp").update(
         crawler_class="",
         schedule_url="https://grit-live.jp/schedule/",
     )
