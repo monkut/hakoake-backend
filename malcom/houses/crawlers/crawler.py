@@ -294,18 +294,18 @@ class LiveHouseWebsiteCrawler(ABC):  # noqa: B024
             # Default to a reasonable date if not found
             opened_date = date(2000, 1, 1)
 
-        live_house, created = LiveHouse.objects.update_or_create(
-            website=self.website,
-            defaults={
-                "name": data["name"],
-                "name_kana": data.get("name_kana", ""),
-                "name_romaji": data.get("name_romaji", ""),
-                "address": data.get("address", ""),
-                "phone_number": data.get("phone_number", ""),
-                "capacity": int(data.get("capacity", 0)),
-                "opened_date": opened_date,
-            },
-        )
+        defaults = {
+            "address": data.get("address", ""),
+            "phone_number": data.get("phone_number", ""),
+            "capacity": int(data.get("capacity", 0)),
+            "opened_date": opened_date,
+        }
+        # A crawler that cannot identify the venue returns blank names; never overwrite stored names with blanks.
+        for field in ("name", "name_kana", "name_romaji"):
+            value = data.get(field, "")
+            if value:
+                defaults[field] = value
+        live_house, created = LiveHouse.objects.update_or_create(website=self.website, defaults=defaults)
         return live_house
 
     def process_performance_schedules(self, schedule_url: str, live_house: LiveHouse) -> None:
