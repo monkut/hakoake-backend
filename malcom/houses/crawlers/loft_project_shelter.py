@@ -106,7 +106,7 @@ class LoftProjectShelterCrawler(LiveHouseWebsiteCrawler):
         schedules = []
 
         # Find event links - each event is wrapped in an <a> tag with schedule URL
-        event_links = soup.find_all("a", href=re.compile(r"/schedule/shelter/\d+"))
+        event_links = soup.find_all("a", href=re.compile(r"/schedule/(?:shelter|loft/schedule)/\d+"))
 
         for link in event_links:
             schedule = self._parse_event_link(link)

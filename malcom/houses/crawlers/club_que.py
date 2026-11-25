@@ -282,6 +282,17 @@ class ClubQueCrawler(LiveHouseWebsiteCrawler):
             separator_performers = self._extract_separator_performers(line_text)
             performers.extend(separator_performers)
 
+        if not performers:
+            h1_title = header.find("h1", class_="title")
+            if h1_title:
+                raw = h1_title.get_text(strip=True)
+                raw = re.sub(r"[【\[].*?[】\]]", "", raw).strip()
+                raw = re.sub(r"\s*-\s*oneman\s*-\s*$", "", raw, flags=re.IGNORECASE).strip()
+                for raw_part in re.split(r"[｜|]", raw):
+                    part = raw_part.strip()
+                    if self._is_valid_performer_name(part):
+                        performers.append(part)
+
         return self._remove_duplicates(performers)
 
     def find_next_month_link(self, html_content: str) -> str | None:
