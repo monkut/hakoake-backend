@@ -9,7 +9,7 @@ from .crawler import CrawlerRegistry, LiveHouseWebsiteCrawler
 
 logger = logging.getLogger(__name__)
 
-BASE_URL = "https://en.club-quattro.com/shibuya/schedule/"
+BASE_URL = "https://club-quattro.com/shibuya/schedule/"
 TIME_PATTERN = re.compile(r"(\d{1,2}:\d{2})\s*/\s*(\d{1,2}:\d{2})")
 
 
