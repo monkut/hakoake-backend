@@ -217,30 +217,35 @@ def collect_schedules(venue_id: int | None = None) -> None:
         try:
             # Run the crawler for this website
             CrawlerRegistry.run_crawler(website)
-            success_count += 1
-
-            # Get after counts for results
-            after_schedules = PerformanceSchedule.objects.filter(live_house=live_house).count() if live_house else 0
-            after_performers = Performer.objects.count()
-
-            new_schedules = after_schedules - before_schedules
-            new_performers = after_performers - before_performers
-
-            logger.info(f"✅ Successfully crawled {live_house_name}")
-            logger.info(f"   📅 Performance Schedules: {new_schedules} new ({after_schedules} total)")
-            logger.info(f"   🎭 Performers: {new_performers} new ({after_performers} total)")
-            if live_house:
-                logger.info(f"   🎪 Venue Capacity: {live_house.capacity}")
-            logger.info("")  # Empty line for readability
-
         except Exception:  # noqa: BLE001
             failed_count += 1
             logger.exception(f"❌ Failed to crawl {live_house_name} (URL: {website.url})")
-
-            # The crawler should have already set the state to FAILED
-            # but ensure it's set in case of unexpected errors
             website.state = WebsiteProcessingState.FAILED
             website.save()
+            continue
+
+        # Detect failures that the crawler swallowed (e.g. HTTP 503, IntegrityError)
+        website.refresh_from_db()
+        if website.state == WebsiteProcessingState.FAILED:
+            failed_count += 1
+            logger.error(f"❌ Failed to crawl {live_house_name} (URL: {website.url})")
+            continue
+
+        success_count += 1
+
+        # Get after counts for results
+        after_schedules = PerformanceSchedule.objects.filter(live_house=live_house).count() if live_house else 0
+        after_performers = Performer.objects.count()
+
+        new_schedules = after_schedules - before_schedules
+        new_performers = after_performers - before_performers
+
+        logger.info(f"✅ Successfully crawled {live_house_name}")
+        logger.info(f"   📅 Performance Schedules: {new_schedules} new ({after_schedules} total)")
+        logger.info(f"   🎭 Performers: {new_performers} new ({after_performers} total)")
+        if live_house:
+            logger.info(f"   🎪 Venue Capacity: {live_house.capacity}")
+        logger.info("")  # Empty line for readability
 
     logger.info(f"Crawling complete: {success_count} successful, {failed_count} failed, {skipped_count} skipped")
 
